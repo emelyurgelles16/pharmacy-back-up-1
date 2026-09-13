@@ -15,15 +15,23 @@ class Product extends Model
     protected $fillable = [
         'name',
         'barcode',
+        'barcode_type',
         'brand',
         'dosage_amount',
         'dosage_unit',
         'form',
-        'dosage_form_id',  // ✅ ADDED
+        'dosage_form_id',
         'type',
         'category',
+        'drug_classification_id',
         'price',
         'image',
+        // ✅ ADD THESE MISSING COLUMNS
+        'batch_id',
+        'batch_number',
+        'pieces_left',
+        'stock_source',
+        'last_stock_queue_id',
     ];
 
     // ✅ PROTEKTAHAN ANG STOCK COLUMNS
@@ -44,7 +52,7 @@ class Product extends Model
 
     public static function generateEAN13()
     {
-        $prefix = '890'; // Philippines country code
+        $prefix = '890';
         $random = str_pad(mt_rand(1, 999999999), 9, '0', STR_PAD_LEFT);
         $barcode = $prefix . $random;
         $checksum = self::calculateEANChecksum($barcode);
@@ -126,7 +134,7 @@ class Product extends Model
 
     public function batches()
     {
-        return $this->hasMany(ProductBatch::class);
+        return $this->hasMany(ProductBatch::class, 'product_id');
     }
 
     public function categoryRelation()
@@ -134,10 +142,14 @@ class Product extends Model
         return $this->belongsTo(Category::class, 'category_id');
     }
 
-    // ✅ RELATIONSHIP WITH DOSAGE FORM
     public function dosageForm()
     {
         return $this->belongsTo(DosageForm::class);
+    }
+
+    public function drugClassification()
+    {
+        return $this->belongsTo(DrugClassification::class, 'drug_classification_id');
     }
 
     public function activePromo()
@@ -168,7 +180,10 @@ class Product extends Model
     {
         return $this->batches()
             ->where('pieces_left', '>', 0)
-            ->where('expiry_date', '>', now())
+            ->where(function($q) {
+                $q->where('expiry_date', '>', now())
+                  ->orWhereNull('expiry_date');
+            })
             ->sum('pieces_left');
     }
 

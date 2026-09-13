@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Sale;
-use App\Models\SalesItem;
+use App\Models\SaleItem;
 use App\Models\Product;
 use App\Models\ActivityLog;
+use App\Models\DiscountType;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -21,41 +23,43 @@ class SalesReportController extends Controller
     {
         $query = Sale::with(['user', 'discountType', 'items']);
         
+        // Date filters
         if ($request->date_from) {
             $query->whereDate('created_at', '>=', $request->date_from);
+            $dateFrom = $request->date_from;
+        } else {
+            $dateFrom = Carbon::today()->format('Y-m-d');
         }
+        
         if ($request->date_to) {
             $query->whereDate('created_at', '<=', $request->date_to);
+            $dateTo = $request->date_to;
+        } else {
+            $dateTo = Carbon::today()->format('Y-m-d');
+        }
+        
+        // ✅ DEFAULT DATE FILTER (Today) - kung walang date_from at date_to
+        if (!$request->date_from && !$request->date_to) {
+            $query->whereDate('created_at', Carbon::today());
         }
         
         if ($request->customer_type && $request->customer_type != 'all') {
             $query->where('customer_type', $request->customer_type);
         }
         
-        $dateFrom = $request->date_from;
-        $dateTo = $request->date_to;
-        if (!$dateFrom && !$dateTo) {
-            $query->whereDate('created_at', Carbon::today());
-            $dateFrom = Carbon::today()->format('Y-m-d');
-            $dateTo = Carbon::today()->format('Y-m-d');
-        }
-        
         $sales = $query->orderBy('created_at', 'desc')->get();
         
-        $totalSales = $query->sum('total_amount');
-        $totalTransactions = $query->count();
+        // Statistics
+        $totalSales = $sales->sum('total_amount');
+        $totalTransactions = $sales->count();
         $averageSale = $totalTransactions > 0 ? $totalSales / $totalTransactions : 0;
-        $totalItemsSold = SalesItem::whereIn('sale_id', $query->pluck('id'))->sum('quantity');
+        $totalItemsSold = SaleItem::whereIn('sale_id', $sales->pluck('id'))->sum('quantity');
         
+        // Top Products
         $topProducts = DB::table('sale_items')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->when($dateFrom, function($q) use ($dateFrom) {
-                return $q->whereDate('sales.created_at', '>=', $dateFrom);
-            })
-            ->when($dateTo, function($q) use ($dateTo) {
-                return $q->whereDate('sales.created_at', '<=', $dateTo);
-            })
+            ->whereIn('sales.id', $sales->pluck('id'))
             ->select(
                 'products.name', 
                 DB::raw('SUM(sale_items.quantity) as total_sold'),
@@ -66,30 +70,29 @@ class SalesReportController extends Controller
             ->limit(10)
             ->get();
         
-        $salesByCustomerType = $query->select('customer_type', DB::raw('SUM(total_amount) as total'), DB::raw('COUNT(*) as count'))
-            ->groupBy('customer_type')
-            ->get();
+        // Sales by Customer Type
+        $salesByCustomerType = $sales->groupBy('customer_type')->map(function($items, $type) {
+            return (object)[
+                'customer_type' => $type ?: 'walk_in',
+                'total' => $items->sum('total_amount'),
+                'count' => $items->count()
+            ];
+        })->values();
         
+        // Daily Sales Chart
         $salesChart = DB::table('sales')
             ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(total_amount) as total'))
-            ->when($dateFrom, function($q) use ($dateFrom) {
-                return $q->whereDate('created_at', '>=', $dateFrom);
-            })
-            ->when($dateTo, function($q) use ($dateTo) {
-                return $q->whereDate('created_at', '<=', $dateTo);
-            })
+            ->whereDate('created_at', '>=', $dateFrom)
+            ->whereDate('created_at', '<=', $dateTo)
             ->groupBy(DB::raw('DATE(created_at)'))
             ->orderBy('date', 'asc')
             ->get();
         
+        // Hourly Sales
         $hourlySales = DB::table('sales')
             ->select(DB::raw('HOUR(created_at) as hour'), DB::raw('SUM(total_amount) as total'))
-            ->when($dateFrom, function($q) use ($dateFrom) {
-                return $q->whereDate('created_at', '>=', $dateFrom);
-            })
-            ->when($dateTo, function($q) use ($dateTo) {
-                return $q->whereDate('created_at', '<=', $dateTo);
-            })
+            ->whereDate('created_at', '>=', $dateFrom)
+            ->whereDate('created_at', '<=', $dateTo)
             ->groupBy(DB::raw('HOUR(created_at)'))
             ->orderBy('hour', 'asc')
             ->get();
@@ -104,8 +107,9 @@ class SalesReportController extends Controller
             ];
         }
         
-        $discountTypes = \App\Models\DiscountType::where('is_active', true)->get();
+        $discountTypes = DiscountType::where('is_active', true)->get();
         
+        // Log activity
         ActivityLog::log(
             auth()->id(),
             auth()->user()->username,
@@ -128,9 +132,25 @@ class SalesReportController extends Controller
         
         if ($request->date_from) {
             $query->whereDate('created_at', '>=', $request->date_from);
+            $dateFrom = $request->date_from;
+        } else {
+            $dateFrom = Carbon::today()->format('Y-m-d');
         }
+        
         if ($request->date_to) {
             $query->whereDate('created_at', '<=', $request->date_to);
+            $dateTo = $request->date_to;
+        } else {
+            $dateTo = Carbon::today()->format('Y-m-d');
+        }
+        
+        // ✅ DEFAULT DATE FILTER (Today) - kung walang date_from at date_to
+        if (!$request->date_from && !$request->date_to) {
+            $query->whereDate('created_at', Carbon::today());
+        }
+        
+        if ($request->customer_type && $request->customer_type != 'all') {
+            $query->where('customer_type', $request->customer_type);
         }
         
         $sales = $query->orderBy('created_at', 'desc')->get();
@@ -138,29 +158,30 @@ class SalesReportController extends Controller
         $filename = 'sales_report_' . date('Y-m-d') . '.csv';
         $handle = fopen('php://temp', 'w+');
         
+        // CSV Headers
         fputcsv($handle, ['Invoice No', 'Date', 'Time', 'Cashier', 'Customer Type', 'Subtotal', 'Discount', 'Total', 'Payment', 'Change']);
         
         foreach ($sales as $sale) {
+            // ✅ Check if user exists before accessing username
+            $cashier = $sale->user ? $sale->user->username : 'Deleted User';
+            
             fputcsv($handle, [
-                $sale->invoice_no,
-                $sale->created_at->format('m/d/Y'),
-                $sale->created_at->format('h:i A'),
-                $sale->user->username,
+                $sale->invoice_no ?? 'N/A',
+                $sale->created_at ? $sale->created_at->format('m/d/Y') : 'N/A',
+                $sale->created_at ? $sale->created_at->format('h:i A') : 'N/A',
+                $cashier,
                 $sale->customer_type ?? 'Walk-in',
-                number_format($sale->subtotal, 2),
-                number_format($sale->discount, 2),
-                number_format($sale->total_amount, 2),
-                number_format($sale->cash_tendered, 2),
-                number_format($sale->change, 2)
+                number_format($sale->subtotal ?? 0, 2),
+                number_format($sale->discount ?? 0, 2),
+                number_format($sale->total_amount ?? 0, 2),
+                number_format($sale->cash_tendered ?? 0, 2),
+                number_format($sale->change ?? 0, 2)
             ]);
         }
         
         rewind($handle);
         $csv = stream_get_contents($handle);
         fclose($handle);
-        
-        $dateFrom = $request->date_from ?? Carbon::today()->format('Y-m-d');
-        $dateTo = $request->date_to ?? Carbon::today()->format('Y-m-d');
         
         ActivityLog::log(
             auth()->id(),
@@ -195,22 +216,26 @@ class SalesReportController extends Controller
             $dateTo = Carbon::today()->format('Y-m-d');
         }
         
+        // ✅ DEFAULT DATE FILTER (Today) - ITO ANG KULANG KANINA!
+        if (!$request->date_from && !$request->date_to) {
+            $query->whereDate('created_at', Carbon::today());
+        }
+        
+        if ($request->customer_type && $request->customer_type != 'all') {
+            $query->where('customer_type', $request->customer_type);
+        }
+        
         $sales = $query->orderBy('created_at', 'desc')->get();
         
         $totalSales = $sales->sum('total_amount');
         $totalTransactions = $sales->count();
-        $totalItemsSold = SalesItem::whereIn('sale_id', $sales->pluck('id'))->sum('quantity');
+        $totalItemsSold = SaleItem::whereIn('sale_id', $sales->pluck('id'))->sum('quantity');
         $averageSale = $totalTransactions > 0 ? $totalSales / $totalTransactions : 0;
         
         $topProducts = DB::table('sale_items')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->when($request->date_from, function($q) use ($request) {
-                return $q->whereDate('sales.created_at', '>=', $request->date_from);
-            })
-            ->when($request->date_to, function($q) use ($request) {
-                return $q->whereDate('sales.created_at', '<=', $request->date_to);
-            })
+            ->whereIn('sales.id', $sales->pluck('id'))
             ->select('products.name', DB::raw('SUM(sale_items.quantity) as total_sold'), DB::raw('SUM(sale_items.total_price) as total_revenue'))
             ->groupBy('products.id', 'products.name')
             ->orderBy('total_sold', 'desc')
@@ -218,9 +243,9 @@ class SalesReportController extends Controller
             ->get();
         
         $pharmacy = [
-            'name' => \App\Models\Setting::get('pharmacy_name', 'AERPHARMACY'),
-            'address' => \App\Models\Setting::get('pharmacy_address', ''),
-            'contact' => \App\Models\Setting::get('pharmacy_contact', ''),
+            'name' => Setting::get('pharmacy_name', 'AERPHARMACY'),
+            'address' => Setting::get('pharmacy_address', ''),
+            'contact' => Setting::get('pharmacy_contact', ''),
         ];
 
         ActivityLog::log(

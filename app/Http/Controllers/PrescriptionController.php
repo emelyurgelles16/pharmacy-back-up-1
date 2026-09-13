@@ -58,7 +58,7 @@ class PrescriptionController extends Controller
             'valid_until' => 'nullable|date|after_or_equal:date_issued',
             'special_instructions' => 'nullable|string',
             'items' => 'required|array|min:1',
-            'items.*.product_name' => 'required|string',
+            'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
         ]);
 
@@ -81,13 +81,13 @@ class PrescriptionController extends Controller
             ]);
 
             foreach ($request->items as $item) {
-                $product = Product::where('name', $item['product_name'])->first();
-
+                $product = Product::find($item['product_id']);
+                
                 PrescriptionItem::create([
                     'prescription_id' => $prescription->id,
-                    'product_id' => $product ? $product->id : null,
-                    'product_name' => $item['product_name'],
-                    'dosage' => $item['dosage'] ?? null,
+                    'product_id' => $item['product_id'],
+                    'product_name' => $product ? $product->name : 'Unknown',
+                    'dosage' => $product ? $product->dosage_amount . ' ' . $product->dosage_unit : null,
                     'quantity_prescribed' => $item['quantity'],
                     'quantity_remaining' => $item['quantity'],
                     'quantity_dispensed' => 0,
@@ -108,11 +108,15 @@ class PrescriptionController extends Controller
                 'Success'
             );
 
-            if ($request->ajax()) {
+            // ✅ AJAX RESPONSE
+            if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
+                    'status' => 'success',
+                    'message' => '✅ Prescription created successfully!',
                     'redirect' => route('prescriptions.show', $prescription),
-                    'message' => 'Prescription created successfully!'
+                    'prescription_number' => $prescription->prescription_number,
+                    'patient_name' => $prescription->patient_name
                 ]);
             }
 
@@ -121,10 +125,11 @@ class PrescriptionController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            if ($request->ajax()) {
+            if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => $e->getMessage()
+                    'status' => 'error',
+                    'message' => '❌ Failed to create prescription: ' . $e->getMessage()
                 ], 500);
             }
             return back()->with('error', 'Failed to create prescription: ' . $e->getMessage())->withInput();
@@ -146,7 +151,11 @@ class PrescriptionController extends Controller
     public function destroy(Prescription $prescription)
     {
         if ($prescription->status === 'used') {
-            return back()->with('error', 'Cannot delete a used prescription.');
+            return response()->json([
+                'success' => false,
+                'status' => 'error',
+                'message' => '❌ Cannot delete a used prescription.'
+            ], 400);
         }
 
         $prescriptionNumber = $prescription->prescription_number;
@@ -162,8 +171,13 @@ class PrescriptionController extends Controller
             'Success'
         );
 
-        return redirect()->route('prescriptions.index')
-            ->with('success', 'Prescription deleted successfully!');
+        return response()->json([
+            'success' => true,
+            'status' => 'success',
+            'message' => '🗑️ Prescription deleted successfully!',
+            'prescription_number' => $prescriptionNumber,
+            'patient_name' => $patientName
+        ]);
     }
 
     public function edit(Prescription $prescription)
@@ -181,7 +195,11 @@ class PrescriptionController extends Controller
     public function update(Request $request, Prescription $prescription)
     {
         if ($prescription->status !== 'active') {
-            return back()->with('error', 'Cannot edit this prescription.');
+            return response()->json([
+                'success' => false,
+                'status' => 'error',
+                'message' => '❌ Cannot edit this prescription.'
+            ], 400);
         }
 
         $request->validate([
@@ -195,7 +213,7 @@ class PrescriptionController extends Controller
             'special_instructions' => 'nullable|string',
             'status' => 'nullable|in:active,cancelled',
             'items' => 'required|array|min:1',
-            'items.*.product_name' => 'required|string',
+            'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
         ]);
 
@@ -221,13 +239,13 @@ class PrescriptionController extends Controller
             $prescription->items()->delete();
 
             foreach ($request->items as $item) {
-                $product = Product::where('name', $item['product_name'])->first();
+                $product = Product::find($item['product_id']);
 
                 PrescriptionItem::create([
                     'prescription_id' => $prescription->id,
-                    'product_id' => $product ? $product->id : null,
-                    'product_name' => $item['product_name'],
-                    'dosage' => $item['dosage'] ?? null,
+                    'product_id' => $item['product_id'],
+                    'product_name' => $product ? $product->name : 'Unknown',
+                    'dosage' => $product ? $product->dosage_amount . ' ' . $product->dosage_unit : null,
                     'quantity_prescribed' => $item['quantity'],
                     'quantity_remaining' => $item['quantity'],
                     'quantity_dispensed' => 0,
@@ -259,11 +277,32 @@ class PrescriptionController extends Controller
                 'Success'
             );
 
+            // ✅ AJAX RESPONSE
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'status' => 'success',
+                    'message' => '✅ Prescription updated successfully!',
+                    'prescription_number' => $prescription->prescription_number,
+                    'patient_name' => $prescription->patient_name,
+                    'redirect' => route('prescriptions.index')
+                ]);
+            }
+
             return redirect()->route('prescriptions.show', $prescription)
                 ->with('success', 'Prescription updated successfully!');
 
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 'error',
+                    'message' => '❌ Failed to update prescription: ' . $e->getMessage()
+                ], 500);
+            }
+            
             return back()->with('error', 'Failed to update prescription: ' . $e->getMessage());
         }
     }

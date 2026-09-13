@@ -22,110 +22,128 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    public function login(Request $request)
-    {
-        // ✅ Validate email and password
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
+public function login(Request $request)
+{
+    // ✅ Validate email and password
+    $request->validate([
+        'email' => 'required|email',
+        'password' => 'required|string',
+    ]);
 
-        // ✅ Find user by email
-        $user = User::where('email', $request->email)->first();
+    // ✅ Find user by email
+    $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
-            return back()->with('error', 'Invalid credentials.');
-        }
+    if (!$user) {
+        return back()->with('error', 'Invalid credentials.');
+    }
 
-        if ($user->locked_until && now()->lt($user->locked_until)) {
-            $secondsLeft = now()->diffInSeconds($user->locked_until);
-            $minutesLeft = ceil($secondsLeft / 60);
-            return back()->with('error', 'Account is temporarily locked. Please try again in ' . $minutesLeft . ' minute(s).');
-        }
+    if ($user->locked_until && now()->lt($user->locked_until)) {
+        $secondsLeft = now()->diffInSeconds($user->locked_until);
+        $minutesLeft = ceil($secondsLeft / 60);
+        return back()->with('error', 'Account is temporarily locked. Please try again in ' . $minutesLeft . ' minute(s).');
+    }
 
-        // ✅ Check credentials WITHOUT logging in yet
-        if (Hash::check($request->password, $user->password)) {
-            DB::table('users')->where('id', $user->id)->update([
-                'login_attempts' => 0,
-                'locked_until' => null
-            ]);
-
-            ActivityLog::log(
-                $user->id,
-                $user->username,
-                'login_attempt',
-                'Auth',
-                'User login attempt for: ' . $user->username,
-                'Success'
-            );
-
-            // ✅ Get user's role
-            $roles = $user->roles->pluck('name')->toArray();
-            if (empty($roles)) {
-                return back()->with('error', 'No role assigned to this user.');
-            }
-            $selectedRole = $roles[0];
-
-            // ✅ CHECK IF DEVICE IS TRUSTED
-            $deviceId = hash('sha256', $request->ip() . $request->userAgent());
-            
-            // ✅ IF TRUSTED, SKIP OTP
-            if ($user->isDeviceTrusted($deviceId)) {
-                Auth::login($user);
-                return redirect()->route('dashboard')->with('success', 'Welcome back!');
-            }
-
-            // ✅ GENERATE OTP (DO NOT LOGIN YET)
-            $otp = $user->generateOtp('login', 10);
-            
-            // ✅ SEND OTP EMAIL
-            $user->sendOtpEmail($otp->code);
-
-            // ✅ STORE SESSION (but DO NOT LOGIN)
-            session(['otp_user_id' => $user->id]);
-            session(['selected_role' => $selectedRole]);
-            session(['temp_user' => [
-                'id' => $user->id,
-                'email' => $user->email,
-                'username' => $user->username,
-                'role' => $selectedRole
-            ]]);
-
-            // ✅ DEBUG - Log that OTP was sent
-            \Log::info('OTP Sent to: ' . $user->email . ' | OTP: ' . $otp->code);
-
-            // ✅ REDIRECT TO OTP PAGE (NOT LOGGED IN YET)
-            return redirect()->route('otp.verify')
-                ->with('info', 'Please enter the OTP sent to ' . $user->email);
-        }
-
-        // ✅ Failed login attempts
-        $currentAttempts = DB::table('users')->where('email', $request->email)->value('login_attempts');
-        $newAttempts = ($currentAttempts ?? 0) + 1;
-
-        DB::table('users')->where('email', $request->email)->update([
-            'login_attempts' => $newAttempts
+    // ✅ Check credentials WITHOUT logging in yet
+    if (Hash::check($request->password, $user->password)) {
+        DB::table('users')->where('id', $user->id)->update([
+            'login_attempts' => 0,
+            'locked_until' => null
         ]);
 
         ActivityLog::log(
-            null,
-            $request->email,
-            'login_failed',
+            $user->id,
+            $user->username,
+            'login_attempt',
             'Auth',
-            'Failed login attempt for user: ' . $request->email,
-            'Failed'
+            'User login attempt for: ' . $user->username,
+            'Success'
         );
 
-        if ($newAttempts >= 3) {
-            DB::table('users')->where('email', $request->email)->update([
-                'locked_until' => now()->addMinutes(1)
-            ]);
-            return back()->with('error', 'Too many failed attempts. Your account is locked for 1 minute.');
-        } else {
-            $remaining = 3 - $newAttempts;
-            return back()->with('error', 'Invalid credentials. You have ' . $remaining . ' attempt(s) remaining.');
+        // ✅ Get user's role
+        $roles = $user->roles->pluck('name')->toArray();
+        if (empty($roles)) {
+            return back()->with('error', 'No role assigned to this user.');
         }
+        $selectedRole = $roles[0];
+
+        // ✅ CHECK IF DEVICE IS TRUSTED (Using improved method)
+        $deviceId = hash('sha256', $request->userAgent() . $request->header('sec-ch-ua-platform', 'unknown'));
+        
+        // ✅ LOG FOR DEBUGGING
+        \Log::info('🔍 LOGIN DEVICE CHECK:', [
+            'user' => $user->username,
+            'device_id' => $deviceId,
+            'is_trusted' => $user->isDeviceTrusted($deviceId),
+            'user_agent' => substr($request->userAgent(), 0, 50) . '...'
+        ]);
+
+        // ✅ IF TRUSTED, SKIP OTP
+        if ($user->isDeviceTrusted($deviceId)) {
+            Auth::login($user);
+            
+            ActivityLog::log(
+                $user->id,
+                $user->username,
+                'login_trusted_device',
+                'Auth',
+                'User logged in via trusted device: ' . $user->username,
+                'Success'
+            );
+            
+            return redirect()->route('dashboard')->with('success', 'Welcome back!');
+        }
+
+        // ✅ GENERATE OTP (DO NOT LOGIN YET)
+        $otp = $user->generateOtp('login', 10);
+        
+        // ✅ SEND OTP EMAIL
+        $user->sendOtpEmail($otp->code);
+
+        // ✅ STORE SESSION (but DO NOT LOGIN)
+        session(['otp_user_id' => $user->id]);
+        session(['selected_role' => $selectedRole]);
+        session(['temp_user' => [
+            'id' => $user->id,
+            'email' => $user->email,
+            'username' => $user->username,
+            'role' => $selectedRole
+        ]]);
+
+        // ✅ DEBUG - Log that OTP was sent
+        \Log::info('📧 OTP Sent to: ' . $user->email . ' | OTP: ' . $otp->code);
+
+        // ✅ REDIRECT TO OTP PAGE (NOT LOGGED IN YET)
+        return redirect()->route('otp.verify')
+            ->with('info', 'Please enter the OTP sent to ' . $user->email);
     }
+
+    // ✅ Failed login attempts
+    $currentAttempts = DB::table('users')->where('email', $request->email)->value('login_attempts');
+    $newAttempts = ($currentAttempts ?? 0) + 1;
+
+    DB::table('users')->where('email', $request->email)->update([
+        'login_attempts' => $newAttempts
+    ]);
+
+    ActivityLog::log(
+        null,
+        $request->email,
+        'login_failed',
+        'Auth',
+        'Failed login attempt for user: ' . $request->email,
+        'Failed'
+    );
+
+    if ($newAttempts >= 3) {
+        DB::table('users')->where('email', $request->email)->update([
+            'locked_until' => now()->addMinutes(1)
+        ]);
+        return back()->with('error', 'Too many failed attempts. Your account is locked for 1 minute.');
+    } else {
+        $remaining = 3 - $newAttempts;
+        return back()->with('error', 'Invalid credentials. You have ' . $remaining . ' attempt(s) remaining.');
+    }
+}
 
     // === SHOW REGISTER FORM (ADMIN ONLY) ===
     public function showRegisterForm()

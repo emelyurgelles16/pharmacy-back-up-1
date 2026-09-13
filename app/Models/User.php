@@ -18,26 +18,26 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasRoles, SoftDeletes;
 
     protected $fillable = [
-        'username',
-        'full_name',
-        'email',
-        'password',
-        'employee_id',
-        'contact_number',
-        'address',
-        'is_active',
-        'last_login_at',
-        'profile_photo',
-        'notes',
-        'resume',
-        'id_photo',
-        // OTP fields
-        'otp_attempts',
-        'otp_last_attempt_at',
-        'otp_locked_until',
-        'login_attempts',
-        'locked_until',
-    ];
+    'username',
+    'full_name',
+    'employee_id',
+    'email',
+    'password',
+    'contact_number',
+    'address',
+    'is_active',
+    'last_login_at',
+    'profile_photo',
+    'resume',
+    'notes',
+    'is_verified',
+    'otp_expires_at',
+    'otp_attempts',
+    'otp_last_attempt_at',
+    'otp_locked_until',
+    'login_attempts',
+    'locked_until',
+];
 
     protected $hidden = [
         'password',

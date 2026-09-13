@@ -7,6 +7,8 @@ use App\Models\ProductBatch;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\ActivityLog;
+use App\Models\Category;
+use App\Models\DrugClassification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -20,7 +22,7 @@ class PosController extends Controller
         })
         ->with(['batches' => function($query) {
             $query->orderBy('expiry_date', 'asc');
-        }, 'activePromo'])
+        }, 'activePromo', 'drugClassification', 'categoryRelation'])
         ->get();
         
         $products->each(function($product) {
@@ -42,11 +44,31 @@ class PosController extends Controller
             $product->promo_discount_percent = $product->currentDiscountPercent;
             $product->promo_reason = $product->has_promo ? $product->activePromo->reason : null;
             $product->discounted_price = $product->has_promo ? $product->discountedPrice : $product->price;
+            
+            // ✅ SET CATEGORY NAME FROM RELATION
+            $product->category_name = $product->categoryRelation ? $product->categoryRelation->name : null;
+            
+            // ✅ ADD: Check kung requires prescription
+            $product->requires_prescription = $product->drugClassification 
+                ? $product->drugClassification->requires_prescription 
+                : false;
+            $product->requires_special_handling = $product->drugClassification 
+                ? $product->drugClassification->requires_special_handling 
+                : false;
         });
         
         $discountTypes = \App\Models\DiscountType::where('is_active', true)->get();
         
-        return view('pos.index', compact('products', 'discountTypes'));
+        // ✅ GET DRUG CLASSIFICATIONS FOR FILTER
+        $drugClassifications = DrugClassification::where('is_active', true)
+            ->orderBy('display_order')
+            ->orderBy('name')
+            ->get();
+        
+        // ✅ GET ALL CATEGORIES FROM CATEGORIES TABLE
+        $categories = Category::orderBy('name')->get();
+        
+        return view('pos.index', compact('products', 'discountTypes', 'drugClassifications', 'categories'));
     }
     
     public function checkout(Request $request)
@@ -74,6 +96,23 @@ class PosController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Cart is empty.'
+                ], 400);
+            }
+
+            // ✅ ADD: Check kung may prescription drugs sa cart
+            $prescriptionRequiredProducts = [];
+            foreach ($cart as $item) {
+                $product = Product::with('drugClassification')->find($item['id']);
+                if ($product && $product->drugClassification && $product->drugClassification->requires_prescription) {
+                    $prescriptionRequiredProducts[] = $product->name;
+                }
+            }
+            
+            // ✅ ADD: Kung may prescription drugs at walang prescription, i-block
+            if (count($prescriptionRequiredProducts) > 0 && !$prescriptionId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '❌ Cannot checkout! The following items require a prescription: ' . implode(', ', $prescriptionRequiredProducts) . '. Please add a prescription first.'
                 ], 400);
             }
 
@@ -284,7 +323,7 @@ class PosController extends Controller
 
     public function findByBarcode($barcode)
     {
-        $product = Product::where('barcode', $barcode)->first();
+        $product = Product::with('drugClassification')->where('barcode', $barcode)->first();
         
         if (!$product) {
             return response()->json(['success' => false, 'message' => 'Product not found']);
@@ -295,6 +334,11 @@ class PosController extends Controller
         if ($totalPiecesLeft <= 0) {
             return response()->json(['success' => false, 'message' => 'Product out of stock']);
         }
+        
+        // ✅ ADD: Check kung requires prescription
+        $requiresPrescription = $product->drugClassification 
+            ? $product->drugClassification->requires_prescription 
+            : false;
         
         return response()->json([
             'success' => true,
@@ -307,6 +351,8 @@ class PosController extends Controller
                 'promo_percent' => $product->currentDiscountPercent,
                 'pieces_left' => $totalPiecesLeft,
                 'barcode' => $product->barcode,
+                'requires_prescription' => $requiresPrescription,
+                'drug_classification' => $product->drugClassification ? $product->drugClassification->name : null,
             ]
         ]);   
     }

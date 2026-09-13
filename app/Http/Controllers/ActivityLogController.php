@@ -11,29 +11,226 @@ class ActivityLogController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'permission:view logs']);
+        $this->middleware(['auth']);
     }
 
+    // ✅ PERSONAL LOGS - for all users (Settings My Activity Logs)
+    public function personalLogs(Request $request)
+{
+    $user = auth()->user();
+    
+    // ✅ Kunin ang date from request
+    $startDate = $request->input('start_date', now()->format('Y-m-d'));
+    $endDate   = $request->input('end_date', now()->format('Y-m-d'));
+    
+    $query = ActivityLog::with('user')->where('user_id', $user->id);
+    
+    // FILTER BY ACTION
+    if ($request->filled('action') && $request->action != '') {
+        $query->where('action', $request->action);
+    }
+    
+    // FILTER BY MODULE
+    if ($request->filled('module') && $request->module != '') {
+        $query->where('module', $request->module);
+    }
+    
+    // ✅ FILTER BY DATE RANGE
+    if ($startDate) {
+        $query->whereDate('created_at', '>=', $startDate);
+    }
+    if ($endDate) {
+        $query->whereDate('created_at', '<=', $endDate);
+    }
+    
+    // FILTER BY STATUS
+    if ($request->filled('status') && $request->status != '') {
+        $query->where('status', $request->status);
+    }
+    
+    // SEARCH
+    if ($request->filled('search') && $request->search != '') {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('description', 'like', "%{$search}%")
+              ->orWhere('module', 'like', "%{$search}%")
+              ->orWhere('action', 'like', "%{$search}%")
+              ->orWhere('user_name', 'like', "%{$search}%");
+        });
+    }
+    
+    // ✅ STATS - Base sa filtered query
+    $total = (clone $query)->count();
+    $todayCount = (clone $query)->whereDate('created_at', today())->count();
+    $modulesCount = (clone $query)->distinct('module')->count('module');
+    
+    $logs = $query->orderBy('created_at', 'desc')->paginate(20);
+    
+    $stats = [
+        'total' => $total,
+        'today' => $todayCount,
+        'modules' => $modulesCount,
+    ];
+    
+    $modules = ActivityLog::where('user_id', $user->id)->distinct()->pluck('module')->filter()->values();
+    $actions = ActivityLog::where('user_id', $user->id)->distinct()->pluck('action')->filter()->values();
+    
+    if ($request->ajax()) {
+        return view('activity-logs.partials.table', compact('logs'))->render();
+    }
+    
+    return view('activity-logs.index', compact(
+        'logs', 'stats', 'modules', 'actions', 
+        'startDate', 'endDate'
+    ));
+}
+
+    // ✅ ALL EMPLOYEE LOGS - Admin only
     public function index(Request $request)
+{
+    $this->authorize('view logs');
+
+    $users = User::orderBy('full_name')->get();
+    $modules = ActivityLog::distinct()->pluck('module')->filter()->values();
+    $actions = ActivityLog::distinct()->pluck('action')->filter()->values();
+
+    // ✅ Kunin ang date from request, default today
+    $startDate = $request->input('start_date', now()->format('Y-m-d'));
+    $endDate   = $request->input('end_date', now()->format('Y-m-d'));
+    $tab = $request->input('tab', 'personal');
+
+    $query = ActivityLog::with('user');
+
+    // ✅ PERSONAL TAB FILTER
+    if ($tab === 'personal') {
+        $query->where('user_id', auth()->id());
+    }
+
+    // FILTER BY USER
+    if ($request->filled('user_id') && $request->user_id != '') {
+        $query->where('user_id', $request->user_id);
+    }
+
+    // FILTER BY ACTION
+    if ($request->filled('action') && $request->action != '') {
+        $query->where('action', $request->action);
+    }
+
+    // FILTER BY MODULE
+    if ($request->filled('module') && $request->module != '') {
+        $query->where('module', $request->module);
+    }
+
+    // ✅ FILTER BY DATE RANGE - ITO ANG IMPORTANTE
+    if ($startDate) {
+        $query->whereDate('created_at', '>=', $startDate);
+    }
+    if ($endDate) {
+        $query->whereDate('created_at', '<=', $endDate);
+    }
+
+    // ✅ STATS - Base sa FILTERED query (gamit ang clone)
+    $total = (clone $query)->count();
+    $todayCount = (clone $query)->whereDate('created_at', today())->count();
+    $uniqueUsers = (clone $query)->distinct('user_id')->count('user_id');
+    $modulesCount = (clone $query)->distinct('module')->count('module');
+
+    // ✅ LOGS - Lahat ng filtered results
+    $logs = $query->orderBy('created_at', 'desc')->get();
+
+    $stats = [
+        'total' => $total,
+        'today' => $todayCount,
+        'unique_users' => $uniqueUsers,
+        'modules' => $modulesCount,
+    ];
+
+        return view('activity-logs.index', compact(
+        'logs', 'users', 'modules', 'actions', 'stats', 
+        'startDate', 'endDate', 'tab'
+    ));
+}
+
+    // ✅ FILTER - used by both tabs
+    public function filter(Request $request)
     {
-        $users = User::orderBy('full_name')->get();
-        $modules = ActivityLog::distinct()->pluck('module')->filter()->values();
-        $total = ActivityLog::count();
-        $todayCount = ActivityLog::whereDate('created_at', today())->count();
-        $uniqueUsers = ActivityLog::distinct('user_id')->count('user_id');
+        $user = auth()->user();
+        $query = ActivityLog::with('user');
         
-        $logs = ActivityLog::with('user')
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        // ✅ Check which tab is active
+        $tab = $request->tab ?? 'personal';
         
-        return view('activity-logs.index', compact('users', 'modules', 'total', 'todayCount', 'uniqueUsers', 'logs'));
+        if ($tab === 'personal') {
+            $query->where('user_id', $user->id);
+        }
+        
+        // ✅ FILTER BY USER (only for admin tab)
+        if ($tab === 'all' && $user->hasRole('Admin')) {
+            if ($request->filled('user_id') && $request->user_id != '') {
+                $query->where('user_id', $request->user_id);
+            }
+        }
+        
+        // ✅ FILTER BY ACTION
+        if ($request->filled('action') && $request->action != '') {
+            $query->where('action', $request->action);
+        }
+        
+        // ✅ FILTER BY MODULE
+        if ($request->filled('module') && $request->module != '') {
+            $query->where('module', $request->module);
+        }
+        
+        // ✅ FILTER BY DATE RANGE
+        if ($request->filled('start_date') && $request->start_date) {
+            $query->whereDate('created_at', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date') && $request->end_date) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
+        
+        // ✅ FILTER BY STATUS
+        if ($request->filled('status') && $request->status != '') {
+            $query->where('status', $request->status);
+        }
+        
+        // ✅ SEARCH
+        if ($request->filled('search') && $request->search != '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                  ->orWhere('module', 'like', "%{$search}%")
+                  ->orWhere('action', 'like', "%{$search}%")
+                  ->orWhere('user_name', 'like', "%{$search}%")
+                  ->orWhereHas('user', function($userQuery) use ($search) {
+                      $userQuery->where('username', 'like', "%{$search}%")
+                                ->orWhere('full_name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
+        }
+        
+        $logs = $query->orderBy('created_at', 'desc')->paginate(20);
+        
+        if ($request->ajax()) {
+            return view('activity-logs.partials.table', compact('logs'))->render();
+        }
+        
+        return view('activity-logs.index', compact('logs'));
     }
 
     public function getData(Request $request)
     {
+        $user = auth()->user();
+        $tab = $request->tab ?? 'personal';
+        
         $query = ActivityLog::with('user');
+        
+        if ($tab === 'personal') {
+            $query->where('user_id', $user->id);
+        }
 
-        if ($request->filled('user') && $request->user != 'all') {
+        if ($request->filled('user') && $request->user != 'all' && $tab === 'all') {
             $query->where('user_id', $request->user);
         }
 
@@ -83,10 +280,10 @@ class ActivityLogController extends Controller
         $logs = $query->paginate(20);
 
         $stats = [
-            'total' => ActivityLog::count(),
-            'today' => ActivityLog::whereDate('created_at', today())->count(),
-            'unique_users' => ActivityLog::distinct('user_id')->count('user_id'),
-            'modules' => ActivityLog::distinct('module')->count('module'),
+            'total' => $query->count(),
+            'today' => $query->whereDate('created_at', today())->count(),
+            'unique_users' => $query->distinct('user_id')->count('user_id'),
+            'modules' => $query->distinct('module')->count('module'),
         ];
 
         return response()->json([
@@ -105,53 +302,6 @@ class ActivityLogController extends Controller
             'html' => view('activity-logs.partials.table', ['logs' => $logs])->render(),
         ]);
     }
-
-    public function filter(Request $request)
-{
-    $user = auth()->user();
-    $query = ActivityLog::with('user');
-    
-    // ✅ Admin can see all logs, others see only their own
-    if (!$user->hasRole('Admin')) {
-        $query->where('user_id', $user->id);
-    }
-    
-    // ✅ FILTER BY ACTION
-    if ($request->filled('action') && $request->action != '') {
-        $query->where('action', $request->action);
-    }
-    
-    // ✅ FILTER BY MODULE
-    if ($request->filled('module') && $request->module != '') {
-        $query->where('module', $request->module);
-    }
-    
-    // ✅ FILTER BY DATE RANGE
-    if ($request->filled('start_date') && $request->start_date) {
-        $query->whereDate('created_at', '>=', $request->start_date);
-    }
-    if ($request->filled('end_date') && $request->end_date) {
-        $query->whereDate('created_at', '<=', $request->end_date);
-    }
-    
-    // ✅ FILTER BY STATUS
-    if ($request->filled('status') && $request->status != '') {
-        $query->where('status', $request->status);
-    }
-    
-    // ✅ FILTER BY USER (if admin and user filter is applied)
-    if ($request->filled('user_id') && $request->user_id != '' && $user->hasRole('Admin')) {
-        $query->where('user_id', $request->user_id);
-    }
-    
-    $logs = $query->orderBy('created_at', 'desc')->paginate(20);
-    
-    if ($request->ajax()) {
-        return view('activity-logs.partials.table', compact('logs'))->render();
-    }
-    
-    return view('activity-logs.index', compact('logs'));
-}
 
     public function exportPreview()
     {

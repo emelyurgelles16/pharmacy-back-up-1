@@ -112,11 +112,16 @@
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        cursor: default;
     }
 
     .stat-card:hover {
         transform: translateY(-4px);
         box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        text-decoration: none;
+        color: inherit;
     }
 
     .stat-card::after {
@@ -165,6 +170,14 @@
     .stat-card .stat-icon.teal {
         background: #e0f2f1;
         color: #00695c;
+    }
+    .stat-card .stat-icon.yellow {
+        background: #fff8e1;
+        color: #f57f17;
+    }
+    .stat-card .stat-icon.pink {
+        background: #fce4ec;
+        color: #c62828;
     }
 
     .stat-card .stat-info h3 {
@@ -358,6 +371,79 @@
         font-size: 14px;
     }
 
+    /* ========== NOTIFICATION STYLES ========== */
+    .notification-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-left: 3px solid transparent;
+        text-decoration: none;
+        color: #333;
+    }
+
+    .notification-item:hover {
+        background: #f8fdf8;
+        text-decoration: none;
+        color: #333;
+    }
+
+    .notification-item .notif-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+        margin-right: 10px;
+    }
+
+    .notification-item .notif-icon.danger {
+        background: #ffebee;
+        color: #c62828;
+    }
+    .notification-item .notif-icon.warning {
+        background: #fff3e0;
+        color: #e65100;
+    }
+    .notification-item .notif-icon.success {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .notification-item .notif-content {
+        flex: 1;
+    }
+
+    .notification-item .notif-content .notif-title {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 1px;
+    }
+
+    .notification-item .notif-content .notif-desc {
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    .notification-item .notif-badge-count {
+        background: #0b7a33;
+        color: white;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 1px 10px;
+        border-radius: 20px;
+        margin-left: 8px;
+    }
+
+    .notification-item .notif-arrow {
+        color: #adb5bd;
+        font-size: 12px;
+    }
+
     /* ========== RESPONSIVE ========== */
     @media (max-width: 1200px) {
         .charts-row-3 { grid-template-columns: 1fr 1fr; }
@@ -380,6 +466,9 @@
         .stat-card { padding: 15px; }
         .stat-card .stat-info .value { font-size: 20px; }
         .stat-card .stat-icon { width: 40px; height: 40px; font-size: 18px; }
+        .notification-item { padding: 6px 10px; }
+        .notification-item .notif-content .notif-title { font-size: 12px; }
+        .notification-item .notif-content .notif-desc { font-size: 11px; }
     }
 
     @media (max-width: 480px) {
@@ -397,8 +486,11 @@
             <i class="fas fa-chalkboard-user"></i> 
             Dashboard
         </h1>
-            <span style="margin: 0 8px; color: #ddd;"></span>
-
+        <div class="dashboard-date">
+            <i class="fas fa-calendar-alt"></i> {{ now()->format('l, F d, Y') }}
+            <span style="margin: 0 8px; color: #ddd;">|</span>
+            <i class="fas fa-clock"></i> {{ now()->format('h:i A') }}
+        </div>
     </div>
 </div>
 
@@ -811,11 +903,11 @@
 {{-- ============================================================ --}}
 @if($userRole === 'Admin')
 
-<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));">
+<div class="stats-grid">
     <div class="stat-card">
         <div class="stat-icon green"><i class="fas fa-chart-line"></i></div>
         <div class="stat-info">
-            <h3>Total Sales (Today)</h3>
+            <h3>Total Sales Today</h3>
             <div class="value">{{ $totalSales ?? 0 }}</div>
         </div>
     </div>
@@ -838,20 +930,6 @@
         <div class="stat-info">
             <h3>Total Products</h3>
             <div class="value">{{ $totalProducts ?? 0 }}</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon orange"><i class="fas fa-exclamation-triangle"></i></div>
-        <div class="stat-info">
-            <h3>Low Stock</h3>
-            <div class="value" style="color:#e65100;">{{ $lowStockCount ?? 0 }}</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon red"><i class="fas fa-ban"></i></div>
-        <div class="stat-info">
-            <h3>Out of Stock</h3>
-            <div class="value" style="color:#c62828;">{{ $outOfStockCount ?? 0 }}</div>
         </div>
     </div>
 </div>
@@ -1146,7 +1224,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 maintainAspectRatio: true,
                 plugins: {
                     legend: { position: 'top' },
-                    tooltip: { callables: { label: (ctx) => `${ctx.raw} pcs sold` } }
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.raw} pcs sold` } }
                 },
                 scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
             }

@@ -35,7 +35,8 @@ class UserController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('full_name', 'like', "%{$search}%")
                   ->orWhere('username', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('employee_id', 'like', "%{$search}%");
             });
         }
 
@@ -66,51 +67,62 @@ class UserController extends Controller
         
         try {
             $validated = $request->validate([
-                'username' => 'required|string|max:255|unique:users',
-                'full_name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users',
-                'password' => 'required|string|min:6',
-                'contact_number' => 'nullable|string',
+                'username' => 'required|string|max:50|unique:users',
+                'full_name' => 'required|string|max:30',
+                'email' => 'required|email|max:30|unique:users',
+                'employee_id' => 'nullable|string|max:20|unique:users',
+                'password' => 'required|string|min:8|confirmed',
+                'contact_number' => 'nullable|string|max:15',
                 'address' => 'nullable|string',
-                'role' => 'required|string',
-                'is_active' => 'sometimes|boolean',
+                'role' => 'required|string|exists:roles,name',
+                'is_active' => 'nullable|boolean',
+                'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
                 'resume' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
-                'id_photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'notes' => 'nullable|string',
             ]);
 
+            // Create user
             $user = User::create([
                 'username' => $validated['username'],
                 'full_name' => $validated['full_name'],
                 'email' => $validated['email'],
+                'employee_id' => $validated['employee_id'] ?? null,
                 'password' => Hash::make($validated['password']),
                 'contact_number' => $validated['contact_number'] ?? null,
                 'address' => $validated['address'] ?? null,
-                'is_active' => $validated['is_active'] ?? true,
+                'is_active' => $request->has('is_active') ? 1 : 0,
+                'notes' => $validated['notes'] ?? null,
+                'is_verified' => 1,
             ]);
 
-            if ($request->hasFile('resume')) {
-                $resume = $request->file('resume');
-                $filename = 'resume_' . $user->id . '_' . time() . '.' . $resume->getClientOriginalExtension();
-                $resume->storeAs('public/documents', $filename);
-                $user->resume = 'documents/' . $filename;
+            // Assign role
+            $user->assignRole($validated['role']);
+
+            // Handle profile photo
+            if ($request->hasFile('profile_photo')) {
+                $file = $request->file('profile_photo');
+                $filename = 'profile_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('public/profile_photos', $filename);
+                $user->profile_photo = 'profile_photos/' . $filename;
             }
-            
-            if ($request->hasFile('id_photo')) {
-                $photo = $request->file('id_photo');
-                $filename = 'id_' . $user->id . '_' . time() . '.' . $photo->getClientOriginalExtension();
-                $photo->storeAs('public/documents', $filename);
-                $user->id_photo = 'documents/' . $filename;
+
+            // Handle resume
+            if ($request->hasFile('resume')) {
+                $file = $request->file('resume');
+                $filename = 'resume_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('public/resumes', $filename);
+                $user->resume = 'resumes/' . $filename;
             }
             
             $user->save();
-            $user->assignRole($validated['role']);
 
+            // Log activity
             ActivityLog::log(
                 auth()->id(),
                 auth()->user()->username,
                 'add_user',
                 'User & Access',
-                'Added new user: ' . $request->username . ' with role: ' . $validated['role'],
+                'Added new user: ' . $user->username . ' with role: ' . $validated['role'],
                 'Success'
             );
 
@@ -161,9 +173,11 @@ class UserController extends Controller
                     'id' => $user->id,
                     'full_name' => $user->full_name,
                     'username' => $user->username,
+                    'employee_id' => $user->employee_id,
                     'email' => $user->email,
                     'contact_number' => $user->contact_number,
                     'address' => $user->address,
+                    'notes' => $user->notes,
                     'role' => $user->roles->first()->name ?? 'Cashier',
                     'is_active' => $user->is_active
                 ]
@@ -181,14 +195,18 @@ class UserController extends Controller
         $this->authorize('edit users');
         
         try {
-            $request->validate([
-                'username' => 'required|string|max:255|unique:users,username,' . $user->id,
-                'full_name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users,email,' . $user->id,
-                'contact_number' => 'nullable|string',
+            $validated = $request->validate([
+                'username' => 'required|string|max:50|unique:users,username,' . $user->id,
+                'full_name' => 'required|string|max:30',
+                'email' => 'required|email|max:30|unique:users,email,' . $user->id,
+                'employee_id' => 'nullable|string|max:20|unique:users,employee_id,' . $user->id,
+                'contact_number' => 'nullable|string|max:15',
                 'address' => 'nullable|string',
+                'role' => 'nullable|string|exists:roles,name',
+                'is_active' => 'nullable|boolean',
+                'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
                 'resume' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
-                'id_photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'notes' => 'nullable|string',
             ]);
 
             $oldValues = [
@@ -199,37 +217,56 @@ class UserController extends Controller
             ];
 
             $user->update([
-                'username' => $request->username,
-                'full_name' => $request->full_name,
-                'email' => $request->email,
-                'contact_number' => $request->contact_number,
-                'address' => $request->address,
-                'is_active' => $request->is_active ?? true,
-                'notes' => $request->notes,
+                'username' => $validated['username'],
+                'full_name' => $validated['full_name'],
+                'email' => $validated['email'],
+                'employee_id' => $validated['employee_id'] ?? null,
+                'contact_number' => $validated['contact_number'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'is_active' => $request->has('is_active') ? 1 : 0,
+                'notes' => $validated['notes'] ?? null,
             ]);
 
+            // Handle profile photo
+            if ($request->hasFile('profile_photo')) {
+                if ($user->profile_photo && file_exists(storage_path('app/public/' . $user->profile_photo))) {
+                    unlink(storage_path('app/public/' . $user->profile_photo));
+                }
+                $file = $request->file('profile_photo');
+                $filename = 'profile_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('public/profile_photos', $filename);
+                $user->profile_photo = 'profile_photos/' . $filename;
+            }
+
+            // Handle resume
             if ($request->hasFile('resume')) {
                 if ($user->resume && file_exists(storage_path('app/public/' . $user->resume))) {
                     unlink(storage_path('app/public/' . $user->resume));
                 }
-                $resume = $request->file('resume');
-                $filename = 'resume_' . $user->id . '_' . time() . '.' . $resume->getClientOriginalExtension();
-                $resume->storeAs('public/documents', $filename);
-                $user->resume = 'documents/' . $filename;
-            }
-            
-            if ($request->hasFile('id_photo')) {
-                if ($user->id_photo && file_exists(storage_path('app/public/' . $user->id_photo))) {
-                    unlink(storage_path('app/public/' . $user->id_photo));
-                }
-                $photo = $request->file('id_photo');
-                $filename = 'id_' . $user->id . '_' . time() . '.' . $photo->getClientOriginalExtension();
-                $photo->storeAs('public/documents', $filename);
-                $user->id_photo = 'documents/' . $filename;
+                $file = $request->file('resume');
+                $filename = 'resume_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('public/resumes', $filename);
+                $user->resume = 'resumes/' . $filename;
             }
             
             $user->save();
 
+            // Handle role update
+            if ($request->has('role')) {
+                $oldRole = $user->roles->first()->name ?? 'none';
+                $user->syncRoles([$request->role]);
+                
+                ActivityLog::log(
+                    auth()->id(),
+                    auth()->user()->username,
+                    'update_role',
+                    'User & Access',
+                    'Changed role for user: ' . $user->username . ' from ' . $oldRole . ' to ' . $request->role,
+                    'Success'
+                );
+            }
+
+            // Log activity
             $changes = [];
             if ($user->full_name != $oldValues['full_name']) $changes[] = 'name';
             if ($user->email != $oldValues['email']) $changes[] = 'email';
@@ -245,20 +282,6 @@ class UserController extends Controller
                 'Updated user: ' . $user->username . $changeList,
                 'Success'
             );
-
-            if ($request->has('role')) {
-                $oldRole = $user->roles->first()->name ?? 'none';
-                $user->syncRoles([$request->role]);
-                
-                ActivityLog::log(
-                    auth()->id(),
-                    auth()->user()->username,
-                    'update_role',
-                    'User & Access',
-                    'Changed role for user: ' . $user->username . ' from ' . $oldRole . ' to ' . $request->role,
-                    'Success'
-                );
-            }
 
             return response()->json([
                 'success' => true,
@@ -402,7 +425,6 @@ class UserController extends Controller
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'resume' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
-            'id_photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
         
         $user = User::findOrFail($request->user_id);
@@ -414,20 +436,9 @@ class UserController extends Controller
             }
             $resume = $request->file('resume');
             $filename = 'resume_' . $user->id . '_' . time() . '.' . $resume->getClientOriginalExtension();
-            $resume->storeAs('public/documents', $filename);
-            $user->resume = 'documents/' . $filename;
+            $resume->storeAs('public/resumes', $filename);
+            $user->resume = 'resumes/' . $filename;
             $uploaded[] = 'resume';
-        }
-        
-        if ($request->hasFile('id_photo')) {
-            if ($user->id_photo && file_exists(storage_path('app/public/' . $user->id_photo))) {
-                unlink(storage_path('app/public/' . $user->id_photo));
-            }
-            $photo = $request->file('id_photo');
-            $filename = 'id_' . $user->id . '_' . time() . '.' . $photo->getClientOriginalExtension();
-            $photo->storeAs('public/documents', $filename);
-            $user->id_photo = 'documents/' . $filename;
-            $uploaded[] = 'ID photo';
         }
         
         $user->save();
@@ -443,5 +454,29 @@ class UserController extends Controller
         );
         
         return response()->json(['success' => true, 'message' => 'Documents uploaded successfully!']);
+    }
+
+    /**
+     * Get all roles for dropdown/selection
+     */
+    public function getRoles()
+    {
+        $roles = Role::all();
+        return response()->json([
+            'success' => true,
+            'roles' => $roles
+        ]);
+    }
+
+    /**
+     * Get role details with icon and description
+     */
+    public function getRoleDetails($id)
+    {
+        $role = Role::with('permissions')->findOrFail($id);
+        return response()->json([
+            'success' => true,
+            'role' => $role
+        ]);
     }
 }

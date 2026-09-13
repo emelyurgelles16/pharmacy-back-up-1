@@ -1,116 +1,151 @@
 ﻿@if($logs->count() > 0)
-<table>
-    <thead>
-        <tr>
-            <th style="width: 145px;">Date &amp; Time</th>
-            <th style="width: 170px;">User</th>
-            <th style="width: 110px;">Action</th>
-            <th style="width: 130px;">Module</th>
-            <th>Description</th>
-            <th style="width: 90px; text-align: center;">Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach($logs as $log)
-        <tr>
-            <td>
-                <div class="date-cell">
-                    <div class="date"><i class="far fa-calendar-alt me-1 text-muted"></i> {{ $log->created_at->format('M d, Y') }}</div>
-                    <div class="time"><i class="far fa-clock me-1 text-muted"></i> {{ $log->created_at->format('h:i A') }}</div>
-                </div>
-            </td>
-            <td>
-                <div class="user-cell">
-                    @php
-                        $name = $log->user_name ?? 'Unknown';
-                        $initial = strtoupper(substr($name, 0, 1));
-                        $colors = ['green', 'blue', 'orange', 'purple', 'red', 'teal'];
-                        $color = $colors[($loop->index ?? 0) % count($colors)];
-                    @endphp
-                    <div class="user-avatar {{ $color }}">{{ $initial }}</div>
-                    <div>
-                        <div class="user-name">{{ $log->user_name ?? 'Unknown User' }}</div>
-                        <div class="user-email">{{ $log->user_email ?? '' }}</div>
+<div class="table-responsive">
+    <table class="activity-table">
+        <thead>
+            <tr>
+                <th class="col-date">Date & Time</th>
+                <th class="col-user">User</th>
+                <th class="col-action">Action</th>
+                <th class="col-module">Module</th>
+                <th class="col-description">Description</th>
+                <th class="col-status">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($logs as $log)
+            @php
+                $actionKey = strtolower(str_replace('_', '', $log->action ?? 'default'));
+                $userInitial = strtoupper(substr($log->user->full_name ?? $log->user->username ?? 'U', 0, 1));
+                $avatarColors = ['green', 'blue', 'orange', 'purple', 'red', 'teal'];
+                $avatarColor = $avatarColors[$log->id % count($avatarColors)];
+            @endphp
+            <tr>
+                {{-- DATE & TIME --}}
+                <td class="col-date">
+                    <div class="date-cell">
+                        <span class="date">{{ \Carbon\Carbon::parse($log->created_at)->format('M d, Y') }}</span>
+                        <span class="time">{{ \Carbon\Carbon::parse($log->created_at)->format('h:i A') }}</span>
                     </div>
-                </div>
-            </td>
-            <td>
-                @php
-                    $actionClass = 'other';
-                    if($log->action == 'create') $actionClass = 'create';
-                    elseif($log->action == 'update') $actionClass = 'update';
-                    elseif($log->action == 'delete') $actionClass = 'delete';
-                    elseif($log->action == 'deduct') $actionClass = 'deduct';
-                    elseif($log->action == 'transfer') $actionClass = 'transfer';
-                    elseif($log->action == 'login') $actionClass = 'login';
-                    elseif($log->action == 'logout') $actionClass = 'logout';
+                </td>
 
-                    $icon = 'fa-circle';
-                    if($log->action == 'create') $icon = 'fa-plus';
-                    elseif($log->action == 'update') $icon = 'fa-pen';
-                    elseif($log->action == 'delete') $icon = 'fa-trash';
-                    elseif($log->action == 'deduct') $icon = 'fa-minus-circle';
-                    elseif($log->action == 'transfer') $icon = 'fa-exchange-alt';
-                    elseif($log->action == 'login') $icon = 'fa-sign-in-alt';
-                    elseif($log->action == 'logout') $icon = 'fa-sign-out-alt';
-                @endphp
-                <span class="action-badge {{ $actionClass }}">
-                    <i class="fas {{ $icon }}"></i>
-                    {{ ucfirst($log->action ?? 'Unknown') }}
-                </span>
-            </td>
-            <td>
-                <span class="module-badge">
-                    <i class="fas 
-                        @if($log->module == 'Inventory') fa-pills
-                        @elseif($log->module == 'POS') fa-cash-register
-                        @elseif($log->module == 'Categories') fa-tags
-                        @elseif($log->module == 'User & Access') fa-users
-                        @elseif($log->module == 'Profile') fa-user
-                        @elseif($log->module == 'Settings') fa-sliders-h
-                        @elseif($log->module == 'Promos') fa-percentage
-                        @elseif($log->module == 'Discount Types') fa-tag
-                        @elseif($log->module == 'Auth') fa-shield-alt
-                        @else fa-cube
-                        @endif me-1"></i>
-                    {{ $log->module ?? 'N/A' }}
-                </span>
-            </td>
-            <td>
-                <div class="description-cell">
-                    {{ Str::limit($log->description ?? $log->activity ?? '', 120) }}
-                </div>
-            </td>
-            <td style="text-align: center;">
-                @php
-                    $status = $log->status ?? 'Success';
-                    $statusClass = strtolower($status) === 'failed' ? 'failed' : 'success';
-                @endphp
-                <span class="status-badge {{ $statusClass }}">
-                    <i class="fas {{ $statusClass == 'success' ? 'fa-check-circle' : 'fa-exclamation-circle' }}"></i>
-                    {{ $status }}
-                </span>
-            </td>
-        </tr>
-        @endforeach
-    </tbody>
-</table>
+                {{-- USER --}}
+                <td class="col-user">
+                    <div class="user-cell">
+                        <div class="user-avatar {{ $avatarColor }}">{{ $userInitial }}</div>
+                        <div class="user-info">
+                            <div class="user-name" title="{{ $log->user->full_name ?? $log->user->username ?? 'System' }}">
+                                {{ $log->user->full_name ?? $log->user->username ?? 'System' }}
+                            </div>
+                            <div class="user-email" title="{{ $log->user->email ?? 'N/A' }}">
+                                {{ $log->user->email ?? 'N/A' }}
+                            </div>
+                        </div>
+                    </div>
+                </td>
 
-<div class="pagination-wrapper">
-    <div class="info">
-        Showing <strong>{{ $logs->firstItem() ?? 0 }}</strong> to 
-        <strong>{{ $logs->lastItem() ?? 0 }}</strong> of 
-        <strong>{{ $logs->total() ?? 0 }}</strong> entries
-    </div>
-    <div>
-        {{ $logs->appends(request()->query())->links() }}
-    </div>
+                {{-- ACTION --}}
+                <td class="col-action">
+                    <span class="action-badge" data-action="{{ $actionKey }}">
+                        <i class="fas fa-bolt"></i>
+                        {{ ucfirst(str_replace('_', ' ', $log->action ?? 'Unknown')) }}
+                    </span>
+                </td>
+
+                {{-- MODULE --}}
+                <td class="col-module">
+                    <span class="module-badge" data-module="{{ strtolower($log->module ?? 'default') }}">
+                        <i class="fas fa-cube"></i>
+                        {{ $log->module ?? 'General' }}
+                    </span>
+                </td>
+
+                {{-- DESCRIPTION --}}
+                <td class="col-description description-cell">
+                    <div class="description-box" title="{{ $log->description ?? 'No description' }}">
+                        {{ $log->description ?? 'No description' }}
+                    </div>
+                </td>
+
+                {{-- STATUS --}}
+                <td class="col-status">
+                    @if(($log->status ?? 'success') == 'Success' || ($log->status ?? 'success') == 'success')
+                        <span class="status-badge success">
+                            <i class="fas fa-check-circle"></i> Success
+                        </span>
+                    @else
+                        <span class="status-badge failed">
+                            <i class="fas fa-times-circle"></i> Failed
+                        </span>
+                    @endif
+                </td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
 </div>
-
 @else
 <div class="empty-state">
-    <i class="fas fa-history"></i>
-    <p>No activity logs found</p>
-    <small>Try adjusting your filters to see more results</small>
+    <i class="fas fa-inbox empty-icon"></i>
+    <p>No Activity Logs Found</p>
+    <small>There are no activities to display for the selected filters.</small>
 </div>
 @endif
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Action colors
+        const actionColors = {
+            'create': 'action-create', 'add': 'action-add',
+            'update': 'action-update', 'edit': 'action-edit',
+            'delete': 'action-delete', 'remove': 'action-remove',
+            'deduct': 'action-deduct', 'transfer': 'action-transfer',
+            'login': 'action-login', 'logout': 'action-logout',
+            'view': 'action-view', 'export': 'action-export',
+            'print': 'action-print'
+        };
+
+        document.querySelectorAll('.action-badge').forEach(function(badge) {
+            let actionName = (badge.getAttribute('data-action') || 'default').toLowerCase();
+            let className = actionColors[actionName];
+            
+            if (className) {
+                badge.classList.add(className);
+            } else {
+                let hash = 0;
+                for (let i = 0; i < actionName.length; i++) {
+                    hash = actionName.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                let hue = Math.abs(hash) % 360;
+                badge.style.setProperty('--hue', hue);
+                badge.classList.add('action-dynamic');
+            }
+        });
+
+        // Module colors
+        const moduleColors = {
+            'inventory': 'module-inventory', 'pos': 'module-pos',
+            'categories': 'module-categories', 'users': 'module-users',
+            'profile': 'module-profile', 'settings': 'module-settings',
+            'promos': 'module-promos', 'discounts': 'module-discounts',
+            'auth': 'module-auth', 'reports': 'module-reports',
+            'dashboard': 'module-dashboard'
+        };
+
+        document.querySelectorAll('.module-badge').forEach(function(badge) {
+            let moduleName = (badge.getAttribute('data-module') || 'default').toLowerCase();
+            let className = moduleColors[moduleName];
+            
+            if (className) {
+                badge.classList.add(className);
+            } else {
+                let hash = 0;
+                for (let i = 0; i < moduleName.length; i++) {
+                    hash = moduleName.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                let hue = Math.abs(hash) % 360;
+                badge.style.setProperty('--hue', hue);
+                badge.classList.add('module-dynamic');
+            }
+        });
+    });
+</script>

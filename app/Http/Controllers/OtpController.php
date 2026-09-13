@@ -22,9 +22,7 @@ class OtpController extends Controller
 
         $user = null;
 
-        if (session('temp_user')) {
-            $user = (object) session('temp_user');
-        } elseif (session('otp_user_id')) {
+        if (session('otp_user_id')) {
             $user = User::find(session('otp_user_id'));
         } elseif (session('user_id')) {
             $user = User::find(session('user_id'));
@@ -167,8 +165,8 @@ class OtpController extends Controller
                 'Success'
             );
 
-            // Store trusted device
-            if ($request->remember) {
+            // ✅ Store trusted device (fixed)
+            if ($request->has('remember') && $request->remember) {
                 \Log::info('🔍 STEP 13.2: Storing trusted device...');
                 try {
                     $this->storeTrustedDevice($user, $request);
@@ -178,6 +176,9 @@ class OtpController extends Controller
             }
 
             \Log::info('✅ STEP 14: Redirecting to dashboard...');
+
+            // ✅ Set session flag para sa welcome alert
+            session(['show_welcome_alert' => true]);
 
             return redirect('/dashboard')->with('success', 'Login successful!');
 
@@ -225,22 +226,29 @@ class OtpController extends Controller
         return back()->with('info', 'A new OTP has been sent to your email.');
     }
 
+    /**
+     * ✅ IMPROVED: Store Trusted Device (mas stable na device fingerprint)
+     */
     private function storeTrustedDevice($user, $request)
     {
         $deviceId = $this->generateDeviceId($request);
         $deviceName = $this->getDeviceName($request);
 
+        // Check if table exists
         if (!Schema::hasTable('user_trusted_devices')) {
+            // Fallback to session-based trusted device
             session(['trusted_device_' . $user->id => $deviceId]);
             session(['trusted_device_expiry_' . $user->id => now()->addDays(30)->timestamp]);
             return;
         }
 
+        // Check if device already exists
         $existing = UserTrustedDevice::where('user_id', $user->id)
             ->where('device_id', $deviceId)
             ->first();
 
         if ($existing) {
+            // Update existing device
             $existing->update([
                 'last_used_at' => now(),
                 'ip_address' => $request->ip(),
@@ -248,21 +256,26 @@ class OtpController extends Controller
                 'expires_at' => now()->addDays(30),
                 'is_active' => true,
             ]);
+            \Log::info('✅ Existing trusted device updated: ' . $deviceId);
         } else {
+            // Limit to 5 trusted devices per user
             $deviceCount = UserTrustedDevice::where('user_id', $user->id)
                 ->where('is_active', true)
                 ->count();
 
             if ($deviceCount >= 5) {
+                // Remove oldest inactive device
                 $oldest = UserTrustedDevice::where('user_id', $user->id)
                     ->where('is_active', true)
                     ->orderBy('last_used_at')
                     ->first();
                 if ($oldest) {
                     $oldest->update(['is_active' => false]);
+                    \Log::info('✅ Removed oldest trusted device: ' . $oldest->device_id);
                 }
             }
 
+            // Create new trusted device
             UserTrustedDevice::create([
                 'user_id' => $user->id,
                 'device_id' => $deviceId,
@@ -273,14 +286,21 @@ class OtpController extends Controller
                 'expires_at' => now()->addDays(30),
                 'is_active' => true,
             ]);
+            \Log::info('✅ New trusted device created: ' . $deviceId);
         }
 
+        // Store in session as fallback
         session(['trusted_device_' . $user->id => $deviceId]);
+        session(['trusted_device_expiry_' . $user->id => now()->addDays(30)->timestamp]);
     }
 
+    /**
+     * ✅ IMPROVED: Check if device is trusted
+     */
     private function isDeviceTrusted($user, $deviceId)
     {
         try {
+            // Check database first
             if (Schema::hasTable('user_trusted_devices')) {
                 $trusted = UserTrustedDevice::where('user_id', $user->id)
                     ->where('device_id', $deviceId)
@@ -292,20 +312,26 @@ class OtpController extends Controller
                     ->exists();
 
                 if ($trusted) {
+                    // Update last_used_at
                     UserTrustedDevice::where('user_id', $user->id)
                         ->where('device_id', $deviceId)
                         ->update(['last_used_at' => now()]);
+                    
+                    \Log::info('✅ Device is trusted (database): ' . $deviceId);
                     return true;
                 }
             }
 
+            // Fallback: Check session
             $storedDeviceId = session('trusted_device_' . $user->id);
             $expiry = session('trusted_device_expiry_' . $user->id);
 
             if ($storedDeviceId === $deviceId && $expiry && now()->timestamp < $expiry) {
+                \Log::info('✅ Device is trusted (session): ' . $deviceId);
                 return true;
             }
 
+            \Log::info('❌ Device is NOT trusted: ' . $deviceId);
             return false;
         } catch (\Exception $e) {
             \Log::error('Error checking trusted device: ' . $e->getMessage());
@@ -313,43 +339,79 @@ class OtpController extends Controller
         }
     }
 
-    public static function isDeviceTrustedStatic($user, $request)
-    {
-        $controller = new self();
-        $deviceId = $controller->generateDeviceId($request);
-        return $controller->isDeviceTrusted($user, $deviceId);
-    }
-
+    /**
+     * ✅ IMPROVED: Generate Device ID (HINDI NA GUMAGAMIT NG IP)
+     * Para hindi mag-iba-iba ang deviceId kahit magpalit ng IP
+     */
     private function generateDeviceId($request)
     {
+        // ✅ Use stable identifiers only (NO IP address)
         $data = [
-            'ip' => $request->ip(),
             'user_agent' => $request->userAgent(),
-            'platform' => $request->header('sec-ch-ua-platform'),
-            'mobile' => $request->header('sec-ch-ua-mobile'),
+            'platform' => $request->header('sec-ch-ua-platform') ?? 'unknown',
+            'mobile' => $request->header('sec-ch-ua-mobile') ?? '?0',
+            'accept_language' => $request->header('accept-language', 'en-US'),
         ];
         
-        return hash('sha256', json_encode($data));
+        $deviceId = hash('sha256', json_encode($data));
+        
+        \Log::info('🔑 Generated Device ID:', [
+            'device_id' => $deviceId,
+            'user_agent' => substr($request->userAgent(), 0, 50) . '...',
+            'platform' => $request->header('sec-ch-ua-platform') ?? 'unknown'
+        ]);
+        
+        return $deviceId;
     }
 
+    /**
+     * Get device name from user agent
+     */
     private function getDeviceName($request)
     {
         $platform = $request->header('sec-ch-ua-platform') ?? 'Unknown';
         $userAgent = $request->header('User-Agent') ?? '';
         
+        // Detect browser
         if (str_contains($userAgent, 'Edg/')) {
-            return 'Edge on ' . $platform;
+            $browser = 'Edge';
         } elseif (str_contains($userAgent, 'Chrome/') && !str_contains($userAgent, 'Edg/')) {
-            return 'Chrome on ' . $platform;
+            $browser = 'Chrome';
         } elseif (str_contains($userAgent, 'Firefox/')) {
-            return 'Firefox on ' . $platform;
+            $browser = 'Firefox';
         } elseif (str_contains($userAgent, 'Safari/') && !str_contains($userAgent, 'Chrome/') && !str_contains($userAgent, 'Edg/')) {
-            return 'Safari on ' . $platform;
+            $browser = 'Safari';
         } elseif (str_contains($userAgent, 'Mobile')) {
-            return 'Mobile Device';
+            $browser = 'Mobile Browser';
+        } else {
+            $browser = 'Unknown Browser';
         }
         
-        return $platform . ' Browser';
+        // Detect OS
+        if (str_contains($userAgent, 'Windows NT 10.0')) {
+            $os = 'Windows 10/11';
+        } elseif (str_contains($userAgent, 'Windows NT 6.1')) {
+            $os = 'Windows 7';
+        } elseif (str_contains($userAgent, 'Mac OS X')) {
+            $os = 'macOS';
+        } elseif (str_contains($userAgent, 'Linux')) {
+            $os = 'Linux';
+        } elseif (str_contains($userAgent, 'iPhone') || str_contains($userAgent, 'iPad')) {
+            $os = 'iOS';
+        } elseif (str_contains($userAgent, 'Android')) {
+            $os = 'Android';
+        } else {
+            $os = 'Unknown OS';
+        }
+        
+        return $browser . ' on ' . $os;
+    }
+
+    public static function isDeviceTrustedStatic($user, $request)
+    {
+        $controller = new self();
+        $deviceId = $controller->generateDeviceId($request);
+        return $controller->isDeviceTrusted($user, $deviceId);
     }
 
     public function verifyWithLink(Request $request)

@@ -21,7 +21,7 @@
 
     <div class="card shadow-sm">
         <div class="card-body">
-            <form id="editEmployeeForm" action="{{ route('user-access.update', $user) }}" method="POST" enctype="multipart/form-data">
+            <form id="editEmployeeForm" action="{{ route('users.update', $user->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 

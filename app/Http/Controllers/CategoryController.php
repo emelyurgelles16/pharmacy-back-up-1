@@ -9,17 +9,49 @@ use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
-    public function index()
+    /**
+     * Display a listing of categories with pagination.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
+     */
+    public function index(Request $request)
     {
-        $categories = Category::all();
+        // ✅ PAGINATION: 30 items per page
+        $query = Category::query();
+
+        // ✅ Server-side search (optional)
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('description', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // ✅ Order by name alphabetically
+        $categories = $query->orderBy('name', 'asc')->paginate(30);
+
+        // ✅ LAGING HTML VIEW ANG IBALIK
         return view('categories.index', compact('categories'));
     }
 
+    /**
+     * Show the form for creating a new category.
+     *
+     * @return \Illuminate\View\View
+     */
     public function create()
     {
         return view('categories.create');
     }
 
+    /**
+     * Store a newly created category in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -66,17 +98,35 @@ class CategoryController extends Controller
         }
     }
 
+    /**
+     * Get all categories as JSON (for dropdowns, etc.)
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function getCategories()
     {
-        $categories = Category::all();
+        $categories = Category::orderBy('name', 'asc')->get();
         return response()->json($categories);
     }
     
+    /**
+     * Display the specified category.
+     *
+     * @param  \App\Models\Category  $category
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function show(Category $category)
     {
         return response()->json($category);
     }
 
+    /**
+     * Update the specified category in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Category  $category
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function update(Request $request, Category $category)
     {
         $request->validate([
@@ -116,6 +166,12 @@ class CategoryController extends Controller
         }
     }
 
+    /**
+     * Remove the specified category from storage.
+     *
+     * @param  \App\Models\Category  $category
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function destroy(Category $category)
     {
         try {

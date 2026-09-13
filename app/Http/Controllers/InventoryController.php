@@ -9,8 +9,10 @@ use App\Models\StockQueue;
 use App\Models\ProductBatch;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 use App\Models\ActivityLog;
 use App\Models\DosageForm;
+use App\Models\DrugClassification;
 
 class InventoryController extends Controller
 {
@@ -18,39 +20,165 @@ class InventoryController extends Controller
     public function index(Request $request)
     {
         $tab = $request->get('tab', 'old-stock');
-        $categories = Category::all();
-        $dosageForms = DosageForm::where('is_active', true)->orderBy('name')->get();
+        
+        // ===== CACHE MASTER DATA =====
+        $categories = Cache::remember('categories', 3600, function() {
+            return Category::all();
+        });
+        
+        $dosageForms = Cache::remember('dosage_forms', 3600, function() {
+            return DosageForm::where('is_active', true)->orderBy('name')->get();
+        });
+        
+        // ✅ DRUG CLASSIFICATIONS - DAPAT LAGING NAKA-LOAD
+        $drugClassifications = Cache::remember('drug_classifications', 3600, function() {
+            return DrugClassification::where('is_active', true)->orderBy('name')->get();
+        });
+        
+        // ===== GET FILTER VALUE =====
+        $drugClassificationFilter = $request->get('drug_classification');
+
+        // ===== GET STATS FOR BADGES =====
+        $totalBatches = Cache::remember('total_batches', 300, function() {
+            return ProductBatch::count();
+        });
+        
+       $queueCount = Cache::remember('queue_count', 300, function() {
+    return StockQueue::whereIn('status', ['pending', 'in_queue'])->count();
+});
 
         if ($tab == 'old-stock') {
-            $products = Product::with('batches')->get();
+            // ===== PAGINATION WITH EAGER LOADING (30 per page) =====
+            $query = Product::with(['batches' => function($query) {
+                $query->orderBy('expiry_date', 'asc');
+            }, 'drugClassification'])
+            ->orderBy('name', 'asc');
+            
+            if ($drugClassificationFilter) {
+                $query->where('drug_classification_id', $drugClassificationFilter);
+            }
+            
+            $products = $query->paginate(30);
+            
+            $queuedStocks = StockQueue::whereIn('status', ['pending', 'in_queue'])
+    ->with(['product', 'addedByUser'])
+    ->get();
             
             return view('inventory', [
                 'products' => $products,
                 'tab' => $tab,
                 'categories' => $categories,
                 'dosageForms' => $dosageForms,
-                'queuedStocks' => StockQueue::where('status', 'in_queue')->with('addedByUser')->get()
+                'drugClassifications' => $drugClassifications,
+                'queuedStocks' => $queuedStocks,
+                'totalBatches' => $totalBatches,
+                'queueCount' => $queueCount,
+                'stats' => $this->getInventoryStats(),
+                'selectedDrugClassification' => $drugClassificationFilter,
             ]);
         } else {
-            $queuedStocks = StockQueue::where('status', 'in_queue')->with(['product', 'addedByUser'])->get();
+           $queuedStocks = StockQueue::whereIn('status', ['pending', 'in_queue'])
+    ->with(['product', 'addedByUser'])
+    ->get();
+            
+            $products = Product::with(['batches' => function($query) {
+                $query->orderBy('expiry_date', 'asc');
+            }, 'drugClassification'])
+            ->orderBy('name', 'asc')
+            ->paginate(30);
             
             return view('inventory', [
-                'products' => Product::with('batches')->get(),
+                'products' => $products,
                 'tab' => $tab,
                 'categories' => $categories,
                 'dosageForms' => $dosageForms,
-                'queuedStocks' => $queuedStocks
+                'drugClassifications' => $drugClassifications,
+                'queuedStocks' => $queuedStocks,
+                'totalBatches' => $totalBatches,
+                'queueCount' => $queueCount,
+                'stats' => $this->getInventoryStats()
             ]);
         }
     }
 
-    /**
-     * Show the form for creating a new product
-     */
+    private function getInventoryStats()
+    {
+        return Cache::remember('inventory_stats', 300, function() {
+            return [
+                'total_products' => Product::count(),
+                'total_batches' => ProductBatch::count(),
+                'low_stock' => ProductBatch::where('pieces_left', '<', 50)->count(),
+                'expired' => ProductBatch::where('expiry_date', '<', now())->count(),
+               'queue' => StockQueue::whereIn('status', ['pending', 'in_queue'])->count(),
+            ];
+        });
+    }
+
+    public function fetchTab(Request $request)
+    {
+        $tab = $request->get('tab', 'old-stock');
+        
+        $categories = Cache::remember('categories', 3600, function() {
+            return Category::all();
+        });
+        
+        $dosageForms = Cache::remember('dosage_forms', 3600, function() {
+            return DosageForm::where('is_active', true)->orderBy('name')->get();
+        });
+        
+        if ($tab == 'old-stock') {
+            $products = Product::with(['batches' => function($query) {
+                $query->orderBy('expiry_date', 'asc');
+            }])
+            ->orderBy('name', 'asc')
+            ->paginate(30);
+            
+           $queuedStocks = StockQueue::whereIn('status', ['pending', 'in_queue'])
+    ->with(['product', 'addedByUser'])
+    ->get();
+            
+            $html = view('inventory.partials.old-stock-table', [
+                'products' => $products,
+                'queuedStocks' => $queuedStocks
+            ])->render();
+            
+            $stats = $this->getInventoryStats();
+            
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+                'tab' => 'old-stock',
+                'badge_count' => $stats['total_batches'],
+                'queue_count' => $stats['queue']
+            ]);
+        } else {
+           $queuedStocks = StockQueue::whereIn('status', ['pending', 'in_queue'])
+    ->with(['product', 'addedByUser'])
+    ->get();
+            
+            $html = view('inventory.partials.new-stock-table', [
+                'queuedStocks' => $queuedStocks
+            ])->render();
+            
+            $stats = $this->getInventoryStats();
+            
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+                'tab' => 'new-stock',
+                'badge_count' => $stats['queue']
+            ]);
+        }
+    }
+
     public function create()
     {
-        $categories = Category::all();
-        $dosageForms = DosageForm::where('is_active', true)->orderBy('name')->get();
+        $categories = Cache::remember('categories', 3600, function() {
+            return Category::all();
+        });
+        $dosageForms = Cache::remember('dosage_forms', 3600, function() {
+            return DosageForm::where('is_active', true)->orderBy('name')->get();
+        });
         return view('products.create', compact('categories', 'dosageForms'));
     }
 
@@ -68,11 +196,12 @@ class InventoryController extends Controller
                 'pieces_per_box' => 'required|integer|min:1',
                 'arrival_date' => 'required|date',
                 'dosage_amount' => 'required|numeric|min:0',
-                'dosage_unit' => 'required|string|in:mg,ml,g,L',
+                'dosage_unit' => 'required|string|max:10',  // ✅ FIXED
                 'brand' => 'nullable|string|max:255',
-                'form' => 'nullable|string|in:Tablet,Capsule,Syrup,Drops,Ointment,Injection',
+                'form' => 'nullable|string|max:50',  // ✅ FIXED
                 'type' => 'nullable|string|in:Generic,Branded',
                 'category' => 'nullable|string|max:255',
+                'drug_classification_id' => 'nullable|exists:drug_classifications,id',
                 'expiry_date' => 'nullable|date',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             ]);
@@ -120,6 +249,7 @@ class InventoryController extends Controller
                         'form' => $request->form,
                         'type' => $request->type,
                         'category' => $request->category,
+                        'drug_classification_id' => $request->drug_classification_id,
                         'price' => $request->price,
                         'quantity' => $request->quantity,
                         'pieces_per_box' => $request->pieces_per_box,
@@ -131,6 +261,9 @@ class InventoryController extends Controller
                     ]);
                     
                     DB::commit();
+                    
+                    Cache::forget('queue_count');
+                    Cache::forget('inventory_stats');
                     
                     ActivityLog::log(
                         auth()->id(),
@@ -162,6 +295,9 @@ class InventoryController extends Controller
                     
                     DB::commit();
                     
+                    Cache::forget('total_batches');
+                    Cache::forget('inventory_stats');
+                    
                     ActivityLog::log(
                         auth()->id(),
                         auth()->user()->username,
@@ -182,7 +318,9 @@ class InventoryController extends Controller
             } else {
                 $imagePath = null;
                 if ($request->hasFile('image')) {
-                    $imagePath = $request->file('image')->store('products', 'public');
+                    $image = $request->file('image');
+                    $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                    $imagePath = $image->storeAs('products', $filename, 'public');
                 }
                 
                 $product = Product::create([
@@ -194,6 +332,7 @@ class InventoryController extends Controller
                     'form' => $request->form,
                     'type' => $request->type,
                     'category' => $request->category,
+                    'drug_classification_id' => $request->drug_classification_id,
                     'price' => $request->price,
                     'image' => $imagePath,
                 ]);
@@ -210,6 +349,9 @@ class InventoryController extends Controller
                 ]);
                 
                 DB::commit();
+                
+                Cache::forget('total_batches');
+                Cache::forget('inventory_stats');
                 
                 ActivityLog::log(
                     auth()->id(),
@@ -250,22 +392,23 @@ class InventoryController extends Controller
         }
     }
 
-    /**
-     * Show the form for editing a product
-     */
     public function edit($id)
     {
         $product = Product::with('batches')->findOrFail($id);
-        $categories = Category::all();
-        $dosageForms = DosageForm::where('is_active', true)->orderBy('name')->get();
+        $categories = Cache::remember('categories', 3600, function() {
+            return Category::all();
+        });
+        $dosageForms = Cache::remember('dosage_forms', 3600, function() {
+            return DosageForm::where('is_active', true)->orderBy('name')->get();
+        });
+        $drugClassifications = Cache::remember('drug_classifications', 3600, function() {
+            return DrugClassification::where('is_active', true)->orderBy('name')->get();
+        });
         $batch = $product->batches->first();
         
-        return view('products.edit', compact('product', 'categories', 'dosageForms', 'batch'));
+        return view('products.edit', compact('product', 'categories', 'dosageForms', 'batch', 'drugClassifications'));
     }
 
-    /**
-     * UPDATE PRODUCT - Returns JSON for AJAX
-     */
     public function update(Request $request, $id)
     {
         try {
@@ -273,7 +416,6 @@ class InventoryController extends Controller
             \Log::info('Product ID: ' . $id);
             \Log::info('Request data:', $request->all());
             
-            // ✅ CHECK IF PRODUCT EXISTS
             $product = Product::find($id);
             if (!$product) {
                 \Log::error('Product not found: ' . $id);
@@ -284,14 +426,13 @@ class InventoryController extends Controller
             }
             \Log::info('Product found: ' . $product->name);
             
-            // ✅ VALIDATION WITH CUSTOM MESSAGES
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'barcode' => 'nullable|string|max:50|unique:products,barcode,' . $id,
                 'brand' => 'nullable|string|max:255',
                 'dosage_amount' => 'required|numeric|min:0',
-                'dosage_unit' => 'required|string|in:mg,ml,g,L',
-                'form' => 'nullable|string|in:Tablet,Capsule,Syrup,Drops,Ointment,Injection,Liquid,Powder,Cream,Gel,Spray,Inhaler,Other',
+                'dosage_unit' => 'required|string|max:10',  // ✅ FIXED
+                'form' => 'nullable|string|max:50',  // ✅ FIXED
                 'type' => 'required|string|in:Generic,Branded',
                 'category' => 'required|string|max:255',
                 'price' => 'required|numeric|min:0',
@@ -300,6 +441,7 @@ class InventoryController extends Controller
                 'expiry_date' => 'nullable|date',
                 'arrival_date' => 'nullable|date',
                 'batch_id' => 'nullable|exists:product_batches,id',
+                'drug_classification_id' => 'nullable|exists:drug_classifications,id',
                 'remove_image' => 'nullable|boolean',
             ], [
                 'name.required' => 'Product Name is required.',
@@ -308,7 +450,8 @@ class InventoryController extends Controller
                 'dosage_amount.required' => 'Dosage amount is required.',
                 'dosage_amount.numeric' => 'Dosage amount must be a valid number.',
                 'dosage_unit.required' => 'Dosage unit is required.',
-                'dosage_unit.in' => 'Dosage unit must be mg, ml, g, or L.',
+                'dosage_unit.max' => 'Dosage unit is too long.',  // ✅ UPDATED
+                'form.max' => 'Form value is too long.',  // ✅ ADDED
                 'type.required' => 'Type (Generic/Branded) is required.',
                 'type.in' => 'Type must be either Generic or Branded.',
                 'category.required' => 'Category is required.',
@@ -324,13 +467,13 @@ class InventoryController extends Controller
                 'expiry_date.date' => 'Expiry date must be a valid date.',
                 'arrival_date.date' => 'Arrival date must be a valid date.',
                 'batch_id.exists' => 'Selected batch does not exist.',
+                'drug_classification_id.exists' => 'Selected drug classification does not exist.',
             ]);
             \Log::info('Validation passed');
             
             DB::beginTransaction();
             \Log::info('Transaction started');
             
-            // ✅ UPDATE PRODUCT
             $oldName = $product->name;
             $oldPrice = $product->price;
             $oldCategory = $product->category;
@@ -350,33 +493,30 @@ class InventoryController extends Controller
                 'form' => $request->input('form'),
                 'type' => $request->input('type'),
                 'category' => $request->input('category'),
+                'drug_classification_id' => $request->drug_classification_id,
                 'price' => $request->input('price'),
             ]);
             \Log::info('Product updated: ' . $product->name);
             
-            // ✅ HANDLE IMAGE
             if ($request->hasFile('image')) {
                 if ($oldImage) {
                     Storage::disk('public')->delete($oldImage);
-                    \Log::info('Old image deleted: ' . $oldImage);
                 }
-                $path = $request->file('image')->store('products', 'public');
+                $image = $request->file('image');
+                $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                $path = $image->storeAs('products', $filename, 'public');
                 $product->update(['image' => $path]);
-                \Log::info('New image uploaded: ' . $path);
                 $changes[] = "Image: Updated";
             }
             
-            // ✅ HANDLE REMOVE IMAGE
             if ($request->has('remove_image') && $request->remove_image == '1') {
                 if ($oldImage) {
                     Storage::disk('public')->delete($oldImage);
                     $product->update(['image' => null]);
-                    \Log::info('Image removed');
                     $changes[] = "Image: Removed";
                 }
             }
             
-            // ✅ UPDATE BATCH
             $batchId = $request->input('batch_id');
             $batchChanges = [];
             if ($batchId) {
@@ -440,13 +580,13 @@ class InventoryController extends Controller
                     if ($request->has('arrival_date') && $request->arrival_date && $oldArrival != $request->arrival_date) {
                         $batchChanges[] = "Arrival: " . ($oldArrival ?? 'N/A') . " → {$request->arrival_date}";
                     }
-                } else {
-                    \Log::warning('Batch not found: ' . $batchId);
                 }
             }
             
             DB::commit();
-            \Log::info('Transaction committed');
+            
+            Cache::forget('total_batches');
+            Cache::forget('inventory_stats');
             
             $changeLog = !empty($changes) ? implode(', ', $changes) : 'No changes';
             $batchChangeLog = !empty($batchChanges) ? ' | Batch: ' . implode(', ', $batchChanges) : '';
@@ -460,7 +600,6 @@ class InventoryController extends Controller
                 'Success'
             );
             
-            // ✅ RETURN JSON RESPONSE FOR AJAX
             return response()->json([
                 'status' => 'success',
                 'message' => '✅ Product updated successfully!'
@@ -468,8 +607,6 @@ class InventoryController extends Controller
             
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
-            \Log::error('Validation Error:', $e->errors());
-            
             return response()->json([
                 'status' => 'error',
                 'message' => 'Validation failed',
@@ -478,9 +615,6 @@ class InventoryController extends Controller
             
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Update error: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
-            
             return response()->json([
                 'status' => 'error',
                 'message' => 'Update failed: ' . $e->getMessage()
@@ -528,6 +662,9 @@ class InventoryController extends Controller
                 
                 DB::commit();
                 
+                Cache::forget('total_batches');
+                Cache::forget('inventory_stats');
+                
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Batch deleted successfully'
@@ -544,6 +681,9 @@ class InventoryController extends Controller
                 $product->delete();
                 
                 DB::commit();
+                
+                Cache::forget('total_batches');
+                Cache::forget('inventory_stats');
                 
                 ActivityLog::log(
                     auth()->id(),
@@ -676,8 +816,6 @@ class InventoryController extends Controller
                 $queuedStock = StockQueue::where('product_id', $product->id)->first();
                 
                 if ($queuedStock) {
-                    \Log::info('Stock is empty. Auto-transferring from queue for product: ' . $product->name);
-                    
                     $nextBatchNumber = 'Batch ' . ($product->batches()->count() + 1);
                     $totalPieces = $queuedStock->quantity * $queuedStock->pieces_per_box;
                     
@@ -693,6 +831,10 @@ class InventoryController extends Controller
                     ]);
                     
                     $queuedStock->delete();
+                    
+                    Cache::forget('queue_count');
+                    Cache::forget('total_batches');
+                    Cache::forget('inventory_stats');
                     
                     ActivityLog::log(
                         auth()->id(),
@@ -720,7 +862,6 @@ class InventoryController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Deduct error: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to deduct stock: ' . $e->getMessage()
@@ -764,6 +905,7 @@ class InventoryController extends Controller
                     'form' => $stockQueue->form,
                     'type' => $stockQueue->type,
                     'category' => $stockQueue->category,
+                    'drug_classification_id' => $stockQueue->drug_classification_id,
                     'price' => $stockQueue->price
                 ]);
                 
@@ -799,6 +941,10 @@ class InventoryController extends Controller
             $stockQueue->delete();
             
             DB::commit();
+            
+            Cache::forget('queue_count');
+            Cache::forget('total_batches');
+            Cache::forget('inventory_stats');
 
             ActivityLog::log(
                 auth()->id(),
@@ -823,6 +969,9 @@ class InventoryController extends Controller
         $queuedStock = StockQueue::findOrFail($id);
         $productName = $queuedStock->product_name;
         $queuedStock->delete();
+        
+        Cache::forget('queue_count');
+        Cache::forget('inventory_stats');
 
         ActivityLog::log(
             auth()->id(),
@@ -833,7 +982,7 @@ class InventoryController extends Controller
             'Success'
         );
 
-        return redirect()->route('inventory', ['tab' => 'new-stock'])
+        return redirect()->route('inventory.index', ['tab' => 'new-stock'])
             ->with('success', 'Queued stock removed!');
     }
 
@@ -870,6 +1019,9 @@ class InventoryController extends Controller
             $batch->save();
             
             DB::commit();
+            
+            Cache::forget('total_batches');
+            Cache::forget('inventory_stats');
 
             ActivityLog::log(
                 auth()->id(),
@@ -914,19 +1066,50 @@ class InventoryController extends Controller
         }
     }
 
-    // ============================================
-    // ✅ GET PRODUCT FOR EDIT (AJAX)
-    // ============================================
+    /**
+     * ✅ GET PRODUCT FOR EDIT (AJAX) — WITH DRUG CLASSIFICATION & TOTAL PIECES
+     */
     public function getProductForEdit($id)
     {
         try {
-            $product = Product::with('batches')->findOrFail($id);
+            $product = Product::with(['batches', 'drugClassification'])->findOrFail($id);
             $batch = $product->batches->first();
+            
+            // ✅ Convert to array para siguradong kasama lahat ng fields
+            $productData = $product->toArray();
+            
+            // ✅ Siguraduhing kasama ang drug_classification_id
+            $productData['drug_classification_id'] = $product->drug_classification_id;
+            
+            // ✅ Siguraduhing kasama ang drug_classification details
+            if ($product->drugClassification) {
+                $productData['drug_classification'] = [
+                    'id' => $product->drugClassification->id,
+                    'name' => $product->drugClassification->name,
+                    'type' => $product->drugClassification->type,
+                ];
+            }
+            
+            // ✅ Batch data — i-compute ang total_pieces
+            $batchData = null;
+            if ($batch) {
+                $batchData = $batch->toArray();
+                // ✅ Compute total_pieces manually (hindi ito direktang column)
+                $batchData['total_pieces'] = ($batch->quantity ?? 0) * ($batch->pieces_per_box ?? 1);
+                
+                // ✅ Format dates
+                if ($batch->expiry_date) {
+                    $batchData['expiry_date'] = $batch->expiry_date->format('Y-m-d');
+                }
+                if ($batch->arrival_date) {
+                    $batchData['arrival_date'] = $batch->arrival_date->format('Y-m-d');
+                }
+            }
             
             return response()->json([
                 'status' => 'success',
-                'product' => $product,
-                'batch' => $batch
+                'product' => $productData,
+                'batch' => $batchData
             ]);
         } catch (\Exception $e) {
             return response()->json([

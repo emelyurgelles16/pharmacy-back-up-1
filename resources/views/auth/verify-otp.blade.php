@@ -208,6 +208,15 @@
             background: rgba(40, 167, 69, 0.08);
             box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.12);
         }
+        /* ✅ NEW: disabled / expired state */
+        .otp-input input:disabled {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.05);
+            color: #aaa;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
         .verifying-overlay {
             display: none;
             align-items: center;
@@ -448,7 +457,6 @@
             </div>
             <input type="hidden" name="otp" id="otp-hidden">
 
-            <!-- ✅ FIXED: Added value="1" to checkbox -->
             <div class="remember-me">
                 <input type="checkbox" name="remember" id="remember" value="1" checked>
                 <label for="remember">Don't ask again on this device for 30 days</label>
@@ -482,6 +490,13 @@
         const verifyBtn = document.getElementById('verifyBtn');
         let isSubmitting = false;
 
+        // ✅ Timer references
+        const timerElement = document.getElementById('countdown');
+        const resendLink = document.getElementById('resendOtp');
+        const timerDiv = document.getElementById('timer');
+        let countdownInterval = null;
+        let timeLeft = 60;
+
         function updateHiddenInput() {
             let otp = '';
             digits.forEach(digit => { otp += digit.value; });
@@ -490,6 +505,9 @@
         }
 
         function checkAndSubmit() {
+            // ✅ Huwag mag-submit kung disabled na ang inputs (expired na ang OTP)
+            if (digits[0].disabled) return;
+
             let otp = updateHiddenInput();
             let filled = true;
             for (let i = 0; i < 6; i++) {
@@ -510,6 +528,48 @@
                     form.submit();
                 }, 400);
             }
+        }
+
+        // ✅ I-enable / i-disable ang OTP inputs
+        function setOtpInputsEnabled(enabled) {
+            digits.forEach(d => {
+                d.disabled = !enabled;
+                if (!enabled) {
+                    d.classList.remove('otp-complete');
+                }
+            });
+            verifyBtn.disabled = !enabled;
+            if (enabled) {
+                verifyBtn.innerHTML = '<i class="fas fa-check me-2"></i> Verify OTP';
+            }
+        }
+
+        // ✅ Simulan ang countdown
+        function startCountdown() {
+            // Clear any existing interval
+            if (countdownInterval) clearInterval(countdownInterval);
+
+            timeLeft = 60;
+            timerElement.textContent = timeLeft;
+            timerDiv.style.display = 'block';
+            resendLink.style.display = 'none';
+
+            countdownInterval = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    timerDiv.style.display = 'none';
+                    resendLink.style.display = 'inline-block';
+
+                    // ✅ I-disable ang OTP inputs at verify button pag expired na
+                    setOtpInputsEnabled(false);
+                    isSubmitting = false;
+                    overlay.style.display = 'none';
+                } else {
+                    timerElement.textContent = timeLeft;
+                    timeLeft--;
+                }
+            }, 1000);
         }
 
         digits.forEach((digit, index) => {
@@ -542,6 +602,7 @@
 
             digit.addEventListener('paste', function(e) {
                 e.preventDefault();
+                if (digits[0].disabled) return; // ✅ Huwag mag-paste kung disabled
                 const paste = (e.clipboardData || window.clipboardData).getData('text');
                 if (paste && paste.length === 6 && /^\d+$/.test(paste)) {
                     for(let i = 0; i < 6 && i < paste.length; i++) {
@@ -591,26 +652,32 @@
             }, 600);
         }
 
-        let timeLeft = 60;
-        const timerElement = document.getElementById('countdown');
-        const resendLink = document.getElementById('resendOtp');
-        const timerDiv = document.getElementById('timer');
-
-        const countdown = setInterval(() => {
-            if (timeLeft <= 0) {
-                clearInterval(countdown);
-                timerDiv.style.display = 'none';
-                resendLink.style.display = 'inline-block';
-            } else {
-                timerElement.textContent = timeLeft;
-                timeLeft--;
-            }
-        }, 1000);
-
+        // ✅ Resend click — i-enable ulit at i-restart ang countdown
         resendLink.addEventListener('click', function(e) {
             e.preventDefault();
+
+            // I-enable ulit ang OTP inputs at i-clear
+            digits.forEach(d => {
+                d.value = '';
+                d.disabled = false;
+                d.classList.remove('otp-complete');
+            });
+            hiddenInput.value = '';
+            isSubmitting = false;
+            overlay.style.display = 'none';
+
+            // I-restart ang countdown
+            startCountdown();
+
+            // I-focus ang unang input
+            digits[0].focus();
+
+            // I-submit ang resend form
             document.getElementById('resendForm').submit();
         });
+
+        // ✅ Simulan ang countdown sa page load
+        startCountdown();
     })();
     </script>
 </body>

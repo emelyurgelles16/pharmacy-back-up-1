@@ -11,28 +11,26 @@ class StockQueue extends Model
 
     protected $table = 'stock_queues';
 
-    // app/Models/StockQueue.php
-protected $fillable = [
-    'product_id',
-    'product_name',
-    'barcode', // ✅ ADD THIS
-    'brand',
-    'dosage_amount',
-    'dosage_unit',
-    'form',
-    'type',
-    'category',
-    'price',
-    'quantity',
-    'pieces_per_box',
-    'total_pieces',
-    'expiry_date',
-    'arrival_date',
-    'added_by',
-    'status',
-    'transferred_at',
-    'transferred_by',
-];
+    protected $fillable = [
+        'product_id',
+        'product_name',
+        'barcode',
+        'brand',
+        'dosage',           // ✅ ITO — single dosage column
+        'form',
+        'type',
+        'category',
+        'price',
+        'quantity',
+        'pieces_per_box',
+        'total_pieces',
+        'expiry_date',
+        'arrival_date',
+        'added_by',
+        'status',
+        'transferred_at',
+        'transferred_by',
+    ];
 
     protected $dates = ['arrival_date', 'expiry_date', 'transferred_at'];
 
@@ -62,14 +60,5 @@ protected $fillable = [
                 $model->total_pieces = $model->quantity * $model->pieces_per_box;
             }
         });
-    }
-    
-    // Accessor for backward compatibility
-    public function getDosageAttribute()
-    {
-        if ($this->dosage_amount && $this->dosage_unit) {
-            return $this->dosage_amount . ' ' . $this->dosage_unit;
-        }
-        return $this->dosage_amount;
     }
 }

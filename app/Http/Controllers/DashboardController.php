@@ -20,31 +20,58 @@ class DashboardController extends Controller
         $today = Carbon::today();
         $cashierId = $user->id;
 
+        // ============================================
+        // ✅ NOTIFICATION DATA (for all users)
+        // ============================================
+        $now = Carbon::now();
+        $thirtyDaysLater = Carbon::now()->addDays(30);
+
+        // Expired - products with expired batches and still have stock
+        $expiredCount = DB::table('product_batches')
+            ->where('expiry_date', '<', $now)
+            ->where('pieces_left', '>', 0)
+            ->distinct('product_id')
+            ->count('product_id');
+
+        // Near Expiry - products expiring within 30 days
+        $nearExpiryCount = DB::table('product_batches')
+            ->where('expiry_date', '>=', $now)
+            ->where('expiry_date', '<=', $thirtyDaysLater)
+            ->where('pieces_left', '>', 0)
+            ->distinct('product_id')
+            ->count('product_id');
+
+        // Low Stock - products with stock <= 30 pcs
+        $lowStockCount = DB::table('product_batches')
+            ->where('pieces_left', '>', 0)
+            ->where('pieces_left', '<=', 30)
+            ->distinct('product_id')
+            ->count('product_id');
+
+        // Out of Stock - products with zero stock
+        $outOfStockCount = DB::table('product_batches')
+            ->where('pieces_left', 0)
+            ->distinct('product_id')
+            ->count('product_id');
+
+        // Total notification count
+        $notificationCount = $expiredCount + $nearExpiryCount + $lowStockCount + $outOfStockCount;
+
+        $notifications = [
+            'expired' => $expiredCount,
+            'near_expiry' => $nearExpiryCount,
+            'low_stock' => $lowStockCount,
+            'out_of_stock' => $outOfStockCount,
+        ];
+
+        // ============================================
+        // 🎯 ORIGINAL DASHBOARD DATA (continued...)
+        // ============================================
+
         // ==================== PHARMACIST DATA ====================
         if ($userRole === 'Pharmacist') {
             // Total Products
             $totalProducts = DB::table('products')->count();
-
-            // Low Stock Count
-            $lowStockCount = DB::table('product_batches')
-                ->where('pieces_left', '>', 0)
-                ->where('pieces_left', '<=', 30)
-                ->distinct('product_id')
-                ->count('product_id');
-
-            // Near Expiry Count
-            $nearExpiryCount = DB::table('product_batches')
-                ->where('expiry_date', '<=', Carbon::now()->addDays(30))
-                ->where('expiry_date', '>', Carbon::now())
-                ->where('pieces_left', '>', 0)
-                ->distinct('product_id')
-                ->count('product_id');
-
-            // Out of Stock Count
-            $outOfStockCount = DB::table('product_batches')
-                ->where('pieces_left', 0)
-                ->distinct('product_id')
-                ->count('product_id');
 
             // Sales Today (all users - Pharmacist can see all)
             $transactionsToday = DB::table('sales')->whereDate('created_at', $today)->count();
@@ -116,7 +143,9 @@ class DashboardController extends Controller
                 'recentTransactions',
                 'stockLevels',
                 'inventoryStatus',
-                'userRole'
+                'userRole',
+                'notificationCount',
+                'notifications'
             ));
         }
 
@@ -124,14 +153,14 @@ class DashboardController extends Controller
         // Total Products
         $totalProducts = DB::table('products')->count();
 
-        // Low Stock Count (products with batches <= 30 pcs) - DAPAT PRODUCT COUNT, HINDI BATCH COUNT
+        // Low Stock Count (products with batches <= 30 pcs)
         $lowStockCount = DB::table('product_batches')
             ->where('pieces_left', '>', 0)
             ->where('pieces_left', '<=', 30)
             ->distinct('product_id')
             ->count('product_id');
 
-        // Near Expiry Count (products with batches expiring within 30 days)
+        // Near Expiry Count
         $nearExpiryCount = DB::table('product_batches')
             ->where('expiry_date', '<=', Carbon::now()->addDays(30))
             ->where('expiry_date', '>', Carbon::now())
@@ -139,13 +168,13 @@ class DashboardController extends Controller
             ->distinct('product_id')
             ->count('product_id');
 
-        // Out of Stock Count (products with zero stock)
+        // Out of Stock Count
         $outOfStockCount = DB::table('product_batches')
             ->where('pieces_left', 0)
             ->distinct('product_id')
             ->count('product_id');
 
-        // Stock Levels per Product (Top 10 for bar graph) - KUHAIN ANG MGA PRODUCTS NA MAY STOCK
+        // Stock Levels per Product
         $stockLevelsRaw = DB::table('products')
             ->leftJoin('product_batches', 'products.id', '=', 'product_batches.product_id')
             ->select('products.name', DB::raw('SUM(product_batches.pieces_left) as total_stock'))
@@ -163,7 +192,7 @@ class DashboardController extends Controller
             ];
         }
 
-        // Inventory Status Distribution (In Stock, Low Stock, Out of Stock)
+        // Inventory Status Distribution
         $inStockCount = DB::table('product_batches')
             ->where('pieces_left', '>', 30)
             ->sum('pieces_left');
@@ -177,7 +206,7 @@ class DashboardController extends Controller
             ->where('pieces_left', 0)
             ->sum('pieces_left');
 
-        // Low Stock Products Table (with product details)
+        // Low Stock Products Table
         $lowStockProductsTable = DB::table('products')
             ->join('product_batches', 'products.id', '=', 'product_batches.product_id')
             ->select('products.name', 'products.category', DB::raw('SUM(product_batches.pieces_left) as total_stock'))
@@ -222,7 +251,6 @@ class DashboardController extends Controller
         ];
 
         // ==================== CASHIER DATA ====================
-        // DIRECT DB QUERIES - FORCE TO WORK
         $transactionsToday = DB::table('sales')
             ->where('user_id', $cashierId)
             ->whereDate('created_at', $today)
@@ -279,7 +307,7 @@ class DashboardController extends Controller
             ];
         }
 
-        // Recent transactions (with user relationship)
+        // Recent transactions
         $recentTransactions = Sale::with('user')
             ->where('user_id', $cashierId)
             ->whereDate('created_at', $today)
@@ -287,13 +315,58 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        // Stock alerts - Low Stock, Expired, Near Expiry (for Cashier) 
+        // Stock alerts
         $outOfStockProducts = [];
         $lowStockProducts = [];
         $expiredProducts = [];
         $nearExpiryProducts = [];
 
-        // ========== SLOW MOVING ITEMS for Cashier (last 30 days) ==========
+        $products = DB::table('products')->get();
+
+        foreach ($products as $product) {
+            $batches = DB::table('product_batches')
+                ->where('product_id', $product->id)
+                ->get();
+
+            foreach ($batches as $batch) {
+                $expiryDate = Carbon::parse($batch->expiry_date);
+                $daysUntilExpiry = $today->diffInDays($expiryDate, false);
+                $piecesLeft = $batch->pieces_left;
+
+                if ($expiryDate < $today && $piecesLeft > 0) {
+                    $expiredProducts[] = (object)[
+                        'name' => $product->name,
+                        'expiry_date' => $batch->expiry_date,
+                        'pieces_left' => $piecesLeft
+                    ];
+                } elseif ($daysUntilExpiry <= 30 && $daysUntilExpiry >= 0 && $piecesLeft > 0) {
+                    $nearExpiryProducts[] = (object)[
+                        'name' => $product->name,
+                        'expiry_date' => $batch->expiry_date,
+                        'days_left' => $daysUntilExpiry,
+                        'pieces_left' => $piecesLeft
+                    ];
+                } elseif ($piecesLeft <= 30 && $piecesLeft > 0) {
+                    $existing = collect($lowStockProducts)->firstWhere('name', $product->name);
+                    if (!$existing) {
+                        $lowStockProducts[] = (object)[
+                            'name' => $product->name,
+                            'pieces_left' => $piecesLeft
+                        ];
+                    }
+                } elseif ($piecesLeft == 0) {
+                    $existing = collect($outOfStockProducts)->firstWhere('name', $product->name);
+                    if (!$existing) {
+                        $outOfStockProducts[] = (object)[
+                            'name' => $product->name,
+                            'category' => $product->category ?? 'N/A'
+                        ];
+                    }
+                }
+            }
+        }
+
+        // ==================== SLOW MOVING ITEMS ====================
         $thirtyDaysAgo = Carbon::now()->subDays(30);
         $slowMovingItemsCashier = [];
 
@@ -349,7 +422,7 @@ class DashboardController extends Controller
 
         $slowMovingItemsCashier = collect($slowMovingItemsCashier)->sortBy('sold_last_30_days')->take(20);
 
-        // ========== ACTIVE PROMOS for Cashier ==========
+        // ==================== ACTIVE PROMOS ====================
         $activePromos = DB::table('promos')
             ->join('products', 'promos.product_id', '=', 'products.id')
             ->select(
@@ -369,67 +442,13 @@ class DashboardController extends Controller
                 return $item;
             });
 
-        $products = DB::table('products')->get();
-
-        foreach ($products as $product) {
-            // Get all batches for this product
-            $batches = DB::table('product_batches')
-                ->where('product_id', $product->id)
-                ->get();
-
-            foreach ($batches as $batch) {
-                $expiryDate = Carbon::parse($batch->expiry_date);
-                $daysUntilExpiry = $today->diffInDays($expiryDate, false);
-                $piecesLeft = $batch->pieces_left;
-
-                // EXPIRED - expired na at may stock pa
-                if ($expiryDate < $today && $piecesLeft > 0) {
-                    $expiredProducts[] = (object)[
-                        'name' => $product->name,
-                        'expiry_date' => $batch->expiry_date,
-                        'pieces_left' => $piecesLeft
-                    ];
-                }
-                // NEAR EXPIRY - within 30 days at may stock pa
-                elseif ($daysUntilExpiry <= 30 && $daysUntilExpiry >= 0 && $piecesLeft > 0) {
-                    $nearExpiryProducts[] = (object)[
-                        'name' => $product->name,
-                        'expiry_date' => $batch->expiry_date,
-                        'days_left' => $daysUntilExpiry,
-                        'pieces_left' => $piecesLeft
-                    ];
-                }
-                // LOW STOCK - stock <= 30 pcs
-                elseif ($piecesLeft <= 30 && $piecesLeft > 0) {
-                    $existing = collect($lowStockProducts)->firstWhere('name', $product->name);
-                    if (!$existing) {
-                        $lowStockProducts[] = (object)[
-                            'name' => $product->name,
-                            'pieces_left' => $piecesLeft
-                        ];
-                    }
-                }
-                // OUT OF STOCK - zero stock
-                elseif ($piecesLeft == 0) {
-                    $existing = collect($outOfStockProducts)->firstWhere('name', $product->name);
-                    if (!$existing) {
-                        $outOfStockProducts[] = (object)[
-                            'name' => $product->name,
-                            'category' => $product->category ?? 'N/A'
-                        ];
-                    }
-                }
-            }
-        }
-
-        // ==================== ADMIN DATA (full system) ====================
+        // ==================== ADMIN DATA ====================
         if ($userRole === 'Admin') {
-            // TOTAL SALES (all users, today)
             $totalSales = DB::table('sales')->whereDate('created_at', $today)->count();
             $totalRevenue = DB::table('sales')->whereDate('created_at', $today)->sum('total_amount') ?? 0;
             $totalTransactions = DB::table('sales')->whereDate('created_at', $today)->count();
 
-            // SALES TREND (Last 7 days - Line Graph)
+            // SALES TREND (Last 7 days)
             $salesTrend = DB::table('sales')
                 ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(total_amount) as total'))
                 ->whereDate('created_at', '>=', Carbon::now()->subDays(7))
@@ -437,7 +456,7 @@ class DashboardController extends Controller
                 ->orderBy('date', 'asc')
                 ->get();
 
-            // TOP SELLING PRODUCTS (all users, last 7 days - Bar Chart)
+            // TOP SELLING PRODUCTS (all users, last 7 days)
             $topProductsAll = DB::table('sale_items')
                 ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
                 ->join('products', 'sale_items.product_id', '=', 'products.id')
@@ -448,7 +467,7 @@ class DashboardController extends Controller
                 ->limit(10)
                 ->get();
 
-            // INVENTORY STATUS DISTRIBUTION (Pie Chart) - using sums
+            // INVENTORY STATUS DISTRIBUTION
             $inStockSum = DB::table('product_batches')->where('pieces_left', '>', 30)->sum('pieces_left');
             $lowStockSum = DB::table('product_batches')->where('pieces_left', '>', 0)->where('pieces_left', '<=', 30)->sum('pieces_left');
             $outOfStockSum = DB::table('product_batches')->where('pieces_left', 0)->sum('pieces_left');
@@ -459,7 +478,7 @@ class DashboardController extends Controller
                 'out_of_stock' => $outOfStockSum
             ];
 
-            // PEAK SALES HOURS (all users - Line Graph)
+            // PEAK SALES HOURS
             $peakHours = DB::table('sales')
                 ->selectRaw('HOUR(created_at) as hour, SUM(total_amount) as total')
                 ->whereDate('created_at', $today)
@@ -483,7 +502,7 @@ class DashboardController extends Controller
                 ->limit(10)
                 ->get();
 
-            // LOW STOCK PRODUCTS LIST (for Admin table)
+            // LOW STOCK PRODUCTS LIST
             $lowStockProductsList = DB::table('products')
                 ->join('product_batches', 'products.id', '=', 'product_batches.product_id')
                 ->select('products.name', 'products.category', DB::raw('SUM(product_batches.pieces_left) as total_stock'))
@@ -494,7 +513,7 @@ class DashboardController extends Controller
                 ->limit(20)
                 ->get();
 
-            // OUT OF STOCK PRODUCTS LIST (for Admin table)
+            // OUT OF STOCK PRODUCTS LIST
             $outOfStockList = DB::table('products')
                 ->join('product_batches', 'products.id', '=', 'product_batches.product_id')
                 ->select('products.name', 'products.category')
@@ -503,7 +522,7 @@ class DashboardController extends Controller
                 ->limit(20)
                 ->get();
 
-            // EXPIRING SOON LIST (for Admin table)
+            // EXPIRING SOON LIST
             $expiringSoonList = DB::table('products')
                 ->join('product_batches', 'products.id', '=', 'product_batches.product_id')
                 ->select(
@@ -525,6 +544,9 @@ class DashboardController extends Controller
         // ==================== DATA ARRAY ====================
         $data = [
             'userRole' => $userRole,
+            // Notification Data (for all users)
+            'notificationCount' => $notificationCount,
+            'notifications' => $notifications,
             // Cashier Data
             'transactionsToday' => $transactionsToday,
             'salesToday' => $salesToday,

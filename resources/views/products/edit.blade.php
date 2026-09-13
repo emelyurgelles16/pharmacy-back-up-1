@@ -4,93 +4,123 @@
 
 @section('content')
 <style>
-    .edit-header {
-        background: linear-gradient(135deg, #1b5e20 0%, #0b7a33 100%);
-        border-radius: 16px;
-        padding: 25px 30px;
+    /* ============================================
+       🎯 STANDARDIZED FONT SIZES - EDIT PRODUCT
+       ============================================ */
+
+    /* ===== HEADER BOX ===== */
+    .header-box {
+        background: linear-gradient(135deg, #198754, #157347);
+        border-radius: 12px;
+        padding: 20px 30px;
         margin-bottom: 30px;
-        color: white;
-        box-shadow: 0 4px 20px rgba(11, 122, 51, 0.25);
+        text-align: left;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
-    .edit-header h2 {
+    .header-box h2 {
         margin: 0;
         font-size: 24px;
         font-weight: 700;
+        color: #ffffff;
         display: flex;
         align-items: center;
         gap: 12px;
     }
 
-    .edit-header p {
-        margin: 8px 0 0 0;
-        opacity: 0.9;
-        font-size: 14px;
+    .header-box h2 i {
+        margin-right: 8px;
     }
 
+    .header-box .btn-back {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 13px;
+        transition: all 0.3s;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .header-box .btn-back:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+    }
+
+    /* ===== FORM CARD ===== */
     .form-card {
         background: #ffffff;
-        padding: 30px;
-        border-radius: 14px;
-        max-width: 700px;
+        padding: 25px 30px;
+        border-radius: 12px;
+        max-width: 750px;
         margin: 0 auto;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         border: 1px solid #eef2f6;
     }
 
+    /* ===== FORM ELEMENTS ===== */
     .form-group {
-        margin-bottom: 18px;
+        margin-bottom: 16px;
     }
 
-    .form-group label {
+    .form-label {
         font-weight: 600;
         color: #333;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 14px;
+        font-size: 13px;
+        flex-wrap: wrap;
     }
 
-    .form-group label .required {
+    .form-label .required {
         color: #dc3545;
         font-weight: 700;
-        margin-left: 4px;
     }
 
-    .form-group label .current-value {
+    .form-label .current-value {
         font-weight: 400;
         color: #6c757d;
-        font-size: 12px;
+        font-size: 11px;
         background: #f8f9fa;
         padding: 2px 10px;
         border-radius: 12px;
     }
 
-    .form-group label .badge-auto {
+    .form-label .badge-auto {
         background: #e8f5e9;
         color: #2e7d32;
         font-size: 9px;
         font-weight: 600;
-        padding: 1px 8px;
+        padding: 2px 10px;
         border-radius: 10px;
-        margin-left: 6px;
         text-transform: uppercase;
     }
 
     .form-control {
         width: 100%;
-        padding: 10px 14px;
+        padding: 8px 14px;
         border-radius: 8px;
-        border: 2px solid #e9ecef;
+        border: 1.5px solid #e0e0e0;
         transition: all 0.3s ease;
-        font-size: 14px;
+        font-size: 13px;
         background-color: white;
+        height: 38px;
     }
 
     .form-control:focus {
-        border-color: #1b5e20;
-        box-shadow: 0 0 0 4px rgba(27, 94, 32, 0.1);
+        border-color: #0b7a33;
+        box-shadow: 0 0 0 3px rgba(11, 122, 51, 0.1);
         outline: none;
     }
 
@@ -113,10 +143,18 @@
         cursor: not-allowed;
     }
 
+    select.form-control {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 32px;
+    }
+
     .invalid-feedback {
         color: #dc3545;
         font-size: 12px;
-        margin-top: 5px;
+        margin-top: 4px;
         display: none;
         align-items: center;
         gap: 6px;
@@ -126,17 +164,153 @@
         display: flex;
     }
 
+    .form-text {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 4px;
+        display: block;
+    }
+
+    /* ===== FORM ROWS ===== */
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .form-row-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+    }
+
+    /* ===== UNIT DISPLAY ===== */
+    .unit-display {
+        background: #f8f9fa;
+        padding: 6px 14px;
+        border-radius: 8px;
+        border: 1.5px solid #e0e0e0;
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+        font-size: 13px;
+    }
+
+    .unit-display .unit-value {
+        font-weight: 700;
+        color: #0b7a33;
+        margin-left: 4px;
+    }
+
+    .unit-display .no-unit {
+        color: #999;
+        font-style: italic;
+    }
+
+    .unit-display i {
+        color: #0b7a33;
+        font-size: 13px;
+        margin-right: 8px;
+    }
+
+    /* ===== BARCODE ===== */
+    .barcode-box {
+        background: #f8f9fa;
+        padding: 12px 16px;
+        border-radius: 10px;
+        margin-bottom: 16px;
+        border: 1px solid #e9ecef;
+    }
+
+    .barcode-box .form-group {
+        margin-bottom: 0;
+    }
+
+    .barcode-wrapper {
+        display: flex;
+        gap: 10px;
+    }
+
+    .barcode-wrapper .form-control {
+        flex: 1;
+        font-family: monospace;
+        letter-spacing: 1px;
+    }
+
+    .barcode-wrapper .btn-generate {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 0 18px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s;
+        white-space: nowrap;
+        font-size: 13px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .barcode-wrapper .btn-generate:hover {
+        background: #5a6268;
+        transform: translateY(-1px);
+    }
+
+    .barcode-preview {
+        text-align: center;
+        padding: 8px;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+        margin-top: 8px;
+    }
+
+    .barcode-preview img {
+        height: 45px;
+        border: 1px solid #ddd;
+        padding: 4px;
+        border-radius: 4px;
+        background: white;
+    }
+
+    /* ===== STOCK INFO ===== */
+    .stock-info-box {
+        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+        padding: 6px 14px;
+        border-radius: 8px;
+        text-align: center;
+        border: 1.5px solid #0b7a33;
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #0b7a33;
+        font-size: 13px;
+    }
+
+    .calculated-field {
+        background: #e8f5e9 !important;
+        border: 1.5px solid #0b7a33 !important;
+        font-weight: 700;
+        color: #0b7a33 !important;
+    }
+
+    /* ===== IMAGE PREVIEW ===== */
     .image-preview-container {
-        margin-top: 10px;
+        margin-top: 8px;
         position: relative;
         display: inline-block;
     }
 
     .image-preview {
-        width: 120px;
-        height: 120px;
+        width: 100px;
+        height: 100px;
         object-fit: cover;
-        border-radius: 10px;
+        border-radius: 8px;
         border: 2px solid #e9ecef;
         padding: 4px;
         background: white;
@@ -165,167 +339,87 @@
         box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
     }
 
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 18px;
-    }
-
-    .form-row-3 {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 18px;
-    }
-
-    .form-row .full-width {
-        grid-column: 1 / -1;
-    }
-
-    .unit-display {
+    /* ===== BATCH INFO ===== */
+    .batch-info-box {
         background: #f8f9fa;
-        padding: 8px 14px;
-        border-radius: 8px;
-        border: 2px solid #e9ecef;
-        min-height: 38px;
-        display: flex;
-        align-items: center;
-        font-size: 14px;
-    }
-
-    .unit-display .unit-value {
-        font-weight: 700;
-        color: #1b5e20;
-        margin-left: 4px;
-    }
-
-    .unit-display .no-unit {
-        color: #999;
-        font-style: italic;
-    }
-
-    .unit-display i {
-        color: #1b5e20;
-        font-size: 14px;
-        margin-right: 8px;
-    }
-
-    .barcode-box {
-        background: #f8f9fa;
-        padding: 12px 16px;
         border-radius: 10px;
-        margin-bottom: 18px;
+        padding: 12px 16px;
         border: 1px solid #e9ecef;
+        margin-bottom: 16px;
     }
 
-    .barcode-box .form-group {
-        margin-bottom: 0;
-    }
-
-    .barcode-wrapper {
-        display: flex;
-        gap: 10px;
-    }
-
-    .barcode-wrapper input {
-        flex: 1;
-        height: 40px;
-        padding: 8px 12px;
-        font-size: 13px;
-        font-family: monospace;
-    }
-
-    .barcode-wrapper .btn-generate {
-        background: #6c757d;
-        color: white;
-        border: none;
-        padding: 0 18px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 500;
-        transition: all 0.3s;
-        white-space: nowrap;
-        font-size: 13px;
-        height: 40px;
-    }
-
-    .barcode-wrapper .btn-generate:hover {
-        background: #5a6268;
-    }
-
-    .text-muted-small {
+    .batch-info-box .batch-label {
+        font-size: 11px;
         color: #6c757d;
-        font-size: 12px;
-        margin-top: 4px;
-        display: block;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
-    .barcode-preview {
-        text-align: center;
-        padding: 10px;
-        background: white;
-        border-radius: 8px;
-        border: 1px solid #e9ecef;
-        margin-top: 10px;
+    .batch-info-box .batch-value {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0b7a33;
+        margin-top: 2px;
     }
 
-    .barcode-preview img {
-        height: 50px;
-        border: 1px solid #ddd;
-        padding: 5px;
-        border-radius: 4px;
-        background: white;
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 13px;
+        display: inline-block;
     }
 
-    .stock-info-box {
-        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-        padding: 8px 14px;
-        border-radius: 8px;
-        text-align: center;
-        border: 2px solid #1b5e20;
-        min-height: 42px;
+    .status-available { background: #e8f5e9; color: #2e7d32; }
+    .status-lowstock { background: #fff3e0; color: #e65100; }
+    .status-expired { background: #ffebee; color: #c62828; }
+    .status-nearexpired { background: #fff8e1; color: #f57f17; }
+
+    /* ===== INFO BADGE ===== */
+    .info-badge {
+        background: #e8f5e9;
+        border-radius: 10px;
+        padding: 10px 16px;
+        border-left: 4px solid #0b7a33;
+        margin-bottom: 20px;
+        font-size: 13px;
+        color: #0b7a33;
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        color: #1b5e20;
-        font-size: 14px;
+        gap: 8px;
     }
 
-    .calculated-field {
-        background: #e8f5e9 !important;
-        border: 2px solid #1b5e20 !important;
-        font-weight: 700;
-        color: #1b5e20 !important;
-        font-size: 14px !important;
-        height: 42px !important;
-        padding: 8px 12px !important;
+    .info-badge i {
+        font-size: 16px;
     }
 
+    /* ===== BUTTONS ===== */
     .btn-group-actions {
         display: flex;
         gap: 12px;
-        margin-top: 25px;
-        padding-top: 20px;
+        margin-top: 20px;
+        padding-top: 18px;
         border-top: 2px dashed #e9ecef;
     }
 
     .btn-save {
-        background: linear-gradient(135deg, #1b5e20, #0b7a33);
+        background: linear-gradient(135deg, #0b7a33, #056b28);
         color: white;
-        padding: 12px 32px;
+        padding: 10px 32px;
         border: none;
-        border-radius: 10px;
+        border-radius: 8px;
         cursor: pointer;
         font-weight: 600;
         transition: all 0.3s ease;
         flex: 1;
-        font-size: 15px;
-        box-shadow: 0 2px 8px rgba(27,94,32,0.3);
+        font-size: 14px;
+        box-shadow: 0 2px 8px rgba(11, 122, 51, 0.3);
     }
 
     .btn-save:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(27,94,32,0.4);
+        box-shadow: 0 6px 16px rgba(11, 122, 51, 0.4);
     }
 
     .btn-save:disabled {
@@ -337,14 +431,14 @@
     .btn-cancel {
         background: #6c757d;
         color: white;
-        padding: 12px 32px;
+        padding: 10px 32px;
         border: none;
-        border-radius: 10px;
+        border-radius: 8px;
         cursor: pointer;
         font-weight: 600;
         transition: all 0.3s ease;
         flex: 1;
-        font-size: 15px;
+        font-size: 14px;
         text-align: center;
         text-decoration: none;
         display: inline-flex;
@@ -356,88 +450,100 @@
     .btn-cancel:hover {
         background: #5a6268;
         transform: translateY(-2px);
+        color: white;
     }
 
-    .info-badge {
-        background: #e8f5e9;
-        border-radius: 10px;
-        padding: 12px 16px;
-        border-left: 4px solid #1b5e20;
-        margin-bottom: 20px;
-        font-size: 14px;
-        color: #1b5e20;
-    }
-
-    .info-badge i {
-        margin-right: 8px;
-    }
-
-    .batch-info-box {
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 15px 18px;
-        border: 1px solid #e9ecef;
-        margin-bottom: 18px;
-    }
-
-    .batch-info-box .batch-label {
-        font-size: 12px;
-        color: #6c757d;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .batch-info-box .batch-value {
-        font-size: 16px;
-        font-weight: 700;
-        color: #1b5e20;
-        margin-top: 2px;
-    }
-
+    /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
+        .header-box {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px 20px;
+        }
+        .header-box h2 {
+            font-size: 20px;
+        }
+        .header-box .btn-back {
+            width: 100%;
+            justify-content: center;
+        }
+        .form-card {
+            padding: 16px;
+            margin: 0 5px;
+        }
         .form-row,
         .form-row-3 {
             grid-template-columns: 1fr;
-        }
-        .form-row .full-width {
-            grid-column: 1;
-        }
-        .btn-group-actions {
-            flex-direction: column;
-        }
-        .form-card {
-            padding: 20px;
-        }
-        .edit-header {
-            padding: 20px;
-        }
-        .edit-header h2 {
-            font-size: 20px;
         }
         .barcode-wrapper {
             flex-direction: column;
         }
         .barcode-wrapper .btn-generate {
             width: 100%;
+            justify-content: center;
+        }
+        .btn-group-actions {
+            flex-direction: column;
+        }
+        .form-label {
+            font-size: 12px;
+        }
+        .form-label .current-value {
+            font-size: 10px;
+        }
+        .batch-info-box .batch-value {
+            font-size: 13px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .header-box h2 {
+            font-size: 18px;
+        }
+        .form-control {
+            font-size: 12px;
+            padding: 6px 10px;
+            height: 34px;
+        }
+        .btn-save,
+        .btn-cancel {
+            font-size: 13px;
+            padding: 8px 20px;
+        }
+        .image-preview {
+            width: 80px;
+            height: 80px;
+        }
+        .stock-info-box {
+            font-size: 12px;
+            min-height: 34px;
+        }
+        .unit-display {
+            font-size: 12px;
+            min-height: 34px;
         }
     }
 </style>
 
-<div class="container-fluid px-3">
-    {{-- HEADER --}}
-    <div class="edit-header">
+<div class="container-fluid">
+    <!-- ===== HEADER ===== -->
+    <div class="header-box">
         <h2>
-            <i class="fas fa-edit"></i> Edit Product
+            <i class="fas fa-edit"></i>
+            Edit Product
         </h2>
-        <p><i class="fas fa-chevron-right me-1"></i> Update product information. Fields with <span class="text-danger">*</span> are required.</p>
+        <a href="{{ route('inventory.index') }}" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Back to Inventory
+        </a>
     </div>
 
-    {{-- FORM --}}
+    <!-- ===== FORM CARD ===== -->
     <div class="form-card">
+        <!-- Info Badge -->
         <div class="info-badge">
             <i class="fas fa-info-circle"></i>
-            <strong>Note:</strong> Only update the fields you want to change. Empty fields will keep their original values.
+            <span><strong>Note:</strong> Only update the fields you want to change. Empty fields will keep their original values.</span>
         </div>
 
         <form id="editForm" action="{{ route('inventory.update', $product->id) }}" method="POST" enctype="multipart/form-data">
@@ -445,9 +551,9 @@
             @method('PUT')
             <input type="hidden" name="batch_id" value="{{ $batch->id ?? '' }}">
 
-            {{-- ===== PRODUCT NAME ===== --}}
+            <!-- ===== PRODUCT NAME ===== -->
             <div class="form-group">
-                <label>
+                <label class="form-label">
                     <i class="fas fa-signature"></i> Product Name
                     <span class="required">*</span>
                     <span class="current-value">Current: {{ $product->name }}</span>
@@ -459,32 +565,32 @@
                 </div>
             </div>
 
-            {{-- ===== BARCODE ===== --}}
+            <!-- ===== BARCODE ===== -->
             <div class="barcode-box">
                 <div class="form-group">
-                    <label>
+                    <label class="form-label">
                         <i class="fas fa-barcode"></i> Barcode
                         <span class="current-value">Current: {{ $product->barcode ?? 'None' }}</span>
                     </label>
                     <div class="barcode-wrapper">
                         <input type="text" name="barcode" id="barcode" class="form-control" 
-                               value="{{ old('barcode', $product->barcode) }}" placeholder="Scan or type barcode..." style="font-family: monospace;">
+                               value="{{ old('barcode', $product->barcode) }}" placeholder="Scan or type barcode...">
                         <button type="button" id="generateBarcodeBtn" class="btn-generate">
                             <i class="fas fa-sync-alt"></i> Generate
                         </button>
                     </div>
-                    <small class="text-muted-small">Leave blank to keep existing barcode</small>
+                    <span class="form-text">Leave blank to keep existing barcode</span>
                 </div>
-                <div id="barcodePreview" style="display: none; text-align: center; margin-top: 8px;">
+                <div id="barcodePreview" style="display: none; text-align: center; margin-top: 6px;">
                     <div class="barcode-preview">
                         <div id="previewImage"></div>
                     </div>
                 </div>
             </div>
 
-            {{-- ===== BRAND ===== --}}
+            <!-- ===== BRAND ===== -->
             <div class="form-group">
-                <label>
+                <label class="form-label">
                     <i class="fas fa-trademark"></i> Brand
                     <span class="current-value">Current: {{ $product->brand ?? 'None' }}</span>
                 </label>
@@ -492,10 +598,10 @@
                        value="{{ old('brand', $product->brand) }}" placeholder="e.g., Unilab">
             </div>
 
-            {{-- ===== DOSAGE ===== --}}
+            <!-- ===== DOSAGE ===== -->
             <div class="form-row">
                 <div class="form-group">
-                    <label>
+                    <label class="form-label">
                         <i class="fas fa-weight-scale"></i> Dosage Amount
                         <span class="required">*</span>
                         <span class="current-value">Current: {{ $product->dosage_amount ?? 0 }}</span>
@@ -508,7 +614,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>
+                    <label class="form-label">
                         <i class="fas fa-ruler"></i> Dosage Unit
                         <span class="required">*</span>
                         <span class="current-value">Current: {{ $product->dosage_unit ?? 'N/A' }}</span>
@@ -527,9 +633,9 @@
                 </div>
             </div>
 
-            {{-- ===== FORM (with Auto-Detect) ===== --}}
+            <!-- ===== FORM (with Auto-Detect) ===== -->
             <div class="form-group">
-                <label>
+                <label class="form-label">
                     <i class="fas fa-capsules"></i> Form
                     <span class="required">*</span>
                     <span class="badge-auto">Auto Unit</span>
@@ -552,7 +658,7 @@
                 </div>
             </div>
 
-            {{-- ===== UNIT AUTO-DETECT DISPLAY ===== --}}
+            <!-- ===== UNIT AUTO-DETECT DISPLAY ===== -->
             <div class="form-group" id="unitDisplayGroup" style="display: none;">
                 <div class="unit-display">
                     <i class="fas fa-check-circle"></i>
@@ -562,10 +668,10 @@
                 </div>
             </div>
 
-            {{-- ===== TYPE & CATEGORY ===== --}}
+            <!-- ===== TYPE & CATEGORY ===== -->
             <div class="form-row">
                 <div class="form-group">
-                    <label>
+                    <label class="form-label">
                         <i class="fas fa-tag"></i> Type
                         <span class="required">*</span>
                         <span class="current-value">Current: {{ $product->type ?? 'N/A' }}</span>
@@ -580,7 +686,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>
+                    <label class="form-label">
                         <i class="fas fa-folder"></i> Category
                         <span class="required">*</span>
                         <span class="current-value">Current: {{ $product->category ?? 'N/A' }}</span>
@@ -600,9 +706,30 @@
                 </div>
             </div>
 
-            {{-- ===== PRICE ===== --}}
+            <!-- ===== DRUG CLASSIFICATION ===== -->
             <div class="form-group">
-                <label>
+                <label class="form-label">
+                    <i class="fas fa-capsules"></i> Drug Classification
+                    <span class="required">*</span>
+                    <span class="current-value">Current: {{ $product->drugClassification->name ?? 'None' }}</span>
+                </label>
+                <select name="drug_classification_id" id="drug_classification_id" class="form-control" required>
+                    <option value="">Select Classification</option>
+                    @foreach($drugClassifications as $classification)
+                        <option value="{{ $classification->id }}" 
+                            {{ old('drug_classification_id', $product->drug_classification_id) == $classification->id ? 'selected' : '' }}>
+                            {{ $classification->name }}
+                        </option>
+                    @endforeach
+                </select>
+                <div class="invalid-feedback" id="drugClassificationError">
+                    <i class="fas fa-exclamation-circle"></i> Drug classification is required.
+                </div>
+            </div>
+
+            <!-- ===== PRICE ===== -->
+            <div class="form-group">
+                <label class="form-label">
                     <i class="fas fa-money-bill-wave"></i> Price (₱)
                     <span class="required">*</span>
                     <span class="current-value">Current: ₱{{ number_format($product->price, 2) }}</span>
@@ -614,10 +741,10 @@
                 </div>
             </div>
 
-            {{-- ===== QUANTITY & PIECES PER BOX ===== --}}
+            <!-- ===== QUANTITY & PIECES PER BOX ===== -->
             <div class="form-row">
                 <div class="form-group">
-                    <label>
+                    <label class="form-label">
                         <i class="fas fa-boxes"></i> Quantity (Boxes)
                         <span class="required">*</span>
                         <span class="current-value">Current: {{ $batch->quantity ?? 0 }}</span>
@@ -630,7 +757,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>
+                    <label class="form-label">
                         <i class="fas fa-vector-square"></i> Pieces per Box
                         <span class="required">*</span>
                         <span class="current-value">Current: {{ $batch->pieces_per_box ?? 0 }}</span>
@@ -643,30 +770,30 @@
                 </div>
             </div>
 
-            {{-- ===== PIECES LEFT & TOTAL PIECES ===== --}}
+            <!-- ===== PIECES LEFT & TOTAL PIECES ===== -->
             <div class="form-row-3">
                 <div class="form-group">
-                    <label><i class="fas fa-boxes"></i> Pieces Left</label>
+                    <label class="form-label"><i class="fas fa-boxes"></i> Pieces Left</label>
                     <input type="text" id="piecesLeft" class="form-control calculated-field" readonly 
                            value="{{ number_format($batch->pieces_left ?? 0) }}">
                 </div>
                 <div class="form-group">
-                    <label><i class="fas fa-calculator"></i> Total Pieces</label>
+                    <label class="form-label"><i class="fas fa-calculator"></i> Total Pieces</label>
                     <input type="text" id="totalPieces" class="form-control calculated-field" readonly 
                            value="{{ number_format($batch->total_pieces ?? 0) }}">
                 </div>
                 <div class="form-group">
-                    <label><i class="fas fa-chart-bar"></i> Stock Status</label>
+                    <label class="form-label"><i class="fas fa-chart-bar"></i> Stock Status</label>
                     <div class="stock-info-box">
                         <span id="stockInfo">{{ number_format($batch->total_pieces ?? 0) }} pcs</span>
                     </div>
                 </div>
             </div>
 
-            {{-- ===== EXPIRY & ARRIVAL ===== --}}
+            <!-- ===== EXPIRY & ARRIVAL ===== -->
             <div class="form-row">
                 <div class="form-group">
-                    <label>
+                    <label class="form-label">
                         <i class="fas fa-calendar-times"></i> Expiry Date
                         <span class="current-value">
                             Current: {{ isset($batch->expiry_date) ? \Carbon\Carbon::parse($batch->expiry_date)->format('Y-m-d') : 'N/A' }}
@@ -674,11 +801,11 @@
                     </label>
                     <input type="date" name="expiry_date" id="expiry_date" class="form-control" 
                            value="{{ old('expiry_date', isset($batch->expiry_date) ? \Carbon\Carbon::parse($batch->expiry_date)->format('Y-m-d') : '') }}">
-                    <small class="text-muted-small">Optional</small>
+                    <span class="form-text">Optional</span>
                 </div>
 
                 <div class="form-group">
-                    <label>
+                    <label class="form-label">
                         <i class="fas fa-calendar-plus"></i> Arrival Date
                         <span class="current-value">
                             Current: {{ isset($batch->arrival_date) ? \Carbon\Carbon::parse($batch->arrival_date)->format('Y-m-d') : 'N/A' }}
@@ -689,7 +816,7 @@
                 </div>
             </div>
 
-            {{-- ===== BATCH INFO (Readonly) ===== --}}
+            <!-- ===== BATCH INFO (Readonly) ===== -->
             <div class="batch-info-box">
                 <div class="form-row">
                     <div class="form-group" style="margin-bottom: 0;">
@@ -699,20 +826,27 @@
                     <div class="form-group" style="margin-bottom: 0;">
                         <label class="batch-label"><i class="fas fa-clock"></i> Status</label>
                         <div class="batch-value">
-                            <span class="status-badge" style="background: {{ $batch->status == 'available' ? '#e8f5e9' : ($batch->status == 'lowstock' ? '#fff3e0' : ($batch->status == 'expired' ? '#ffebee' : '#fff8e1')) }}; 
-                                    color: {{ $batch->status == 'available' ? '#2e7d32' : ($batch->status == 'lowstock' ? '#e65100' : ($batch->status == 'expired' ? '#c62828' : '#f57f17')) }};
-                                    padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 13px;">
-                                {{ $batch->status_text ?? 'N/A' }}
-                            </span>
+                            @php
+                                $status = $batch->status ?? 'available';
+                                $statusClass = match($status) {
+                                    'available' => 'status-available',
+                                    'lowstock' => 'status-lowstock',
+                                    'expired' => 'status-expired',
+                                    'nearexpired' => 'status-nearexpired',
+                                    default => 'status-available'
+                                };
+                                $statusText = $batch->status_text ?? 'Available';
+                            @endphp
+                            <span class="status-badge {{ $statusClass }}">{{ $statusText }}</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {{-- ===== IMAGE ===== --}}
+            <!-- ===== IMAGE ===== -->
             <div class="form-group">
-                <label><i class="fas fa-image"></i> Product Image</label>
-                <input type="file" name="image" id="image" class="form-control" accept="image/*" onchange="previewImage(event)">
+                <label class="form-label"><i class="fas fa-image"></i> Product Image</label>
+                <input type="file" name="image" id="image" class="form-control" accept="image/*" onchange="previewImage(event)" style="height: auto; padding: 4px 8px;">
                 
                 <div class="image-preview-container">
                     @if($product->image)
@@ -724,10 +858,10 @@
                         <img id="preview" class="image-preview" style="display:none;">
                     @endif
                 </div>
-                <small class="text-muted-small">Max size: 2MB. JPG, PNG only. Leave empty to keep current image.</small>
+                <span class="form-text">Max size: 2MB. JPG, PNG only. Leave empty to keep current image.</span>
             </div>
 
-            {{-- ===== BUTTONS ===== --}}
+            <!-- ===== BUTTONS ===== -->
             <div class="btn-group-actions">
                 <a href="{{ route('inventory.index') }}" class="btn-cancel">
                     <i class="fas fa-times"></i> Cancel
@@ -770,7 +904,6 @@ $(document).ready(function() {
         preview.src = '';
         fileInput.value = '';
         
-        // Add a hidden input to flag image removal
         if (!$('#remove_image_flag').length) {
             $('<input>').attr({
                 type: 'hidden',
@@ -791,7 +924,7 @@ $(document).ready(function() {
 
     // Show barcode preview if exists
     @if($product->barcode)
-        $('#previewImage').html(`<img src="/barcodes/image/{{ $product->barcode }}" style="height: 50px; border: 1px solid #ddd; padding: 5px; border-radius: 4px; background: white;">`);
+        $('#previewImage').html(`<img src="/barcodes/image/{{ $product->barcode }}" style="height: 45px; border: 1px solid #ddd; padding: 4px; border-radius: 4px; background: white;">`);
         $('#barcodePreview').show();
     @endif
 
@@ -810,7 +943,7 @@ $(document).ready(function() {
         let stockInfo = $('#stockInfo');
         if (total === 0) { stockInfo.css('color', '#dc3545'); }
         else if (total < 100) { stockInfo.css('color', '#f57c00'); }
-        else { stockInfo.css('color', '#1b5e20'); }
+        else { stockInfo.css('color', '#0b7a33'); }
     }
 
     $('#quantity, #pieces_per_box').on('input', calculatePieces);
@@ -859,7 +992,6 @@ $(document).ready(function() {
 
     formSelect.addEventListener('change', autoDetectUnit);
 
-    // Trigger auto-detect on load if form has value
     if (formSelect.value) {
         autoDetectUnit();
     }
@@ -924,7 +1056,7 @@ $(document).ready(function() {
                 if (!firstInvalid) {
                     firstInvalid = this;
                 }
-                const label = $(this).closest('.form-group').find('label').text().trim();
+                const label = $(this).closest('.form-group').find('.form-label').text().trim();
                 errorList += `<li><i class="fas fa-exclamation-circle text-danger me-2"></i>${label} is required</li>`;
             }
         });
@@ -941,7 +1073,7 @@ $(document).ready(function() {
                         </ul>
                     </div>
                 `,
-                confirmButtonColor: '#1b5e20',
+                confirmButtonColor: '#0b7a33',
                 confirmButtonText: 'OK, I\'ll fill it out'
             });
             
@@ -1052,7 +1184,7 @@ $(document).ready(function() {
             success: function(data) {
                 if (data.barcode) {
                     $('#barcode').val(data.barcode);
-                    $('#previewImage').html(`<img src="/barcodes/image/${data.barcode}" style="height: 50px; border: 1px solid #ddd; padding: 5px; border-radius: 4px; background: white;">`);
+                    $('#previewImage').html(`<img src="/barcodes/image/${data.barcode}" style="height: 45px; border: 1px solid #ddd; padding: 4px; border-radius: 4px; background: white;">`);
                     $('#barcodePreview').show();
                     Swal.fire({ 
                         icon: 'success', 
@@ -1082,13 +1214,13 @@ $(document).ready(function() {
 
 {{-- SESSION MESSAGES --}}
 @if (session('error'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="max-width: 700px; margin: 20px auto;">
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="max-width: 750px; margin: 20px auto; font-size: 13px;">
         <div class="d-flex align-items-start">
             <i class="fas fa-exclamation-circle me-2 mt-1"></i>
             <div>
                 <strong>{{ session('error') }}</strong>
                 @if (session('error_details'))
-                    <div class="mt-2" style="font-size: 13px;">
+                    <div class="mt-2" style="font-size: 12px;">
                         {!! session('error_details') !!}
                     </div>
                 @endif
@@ -1099,7 +1231,7 @@ $(document).ready(function() {
 @endif
 
 @if ($errors->any())
-    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="max-width: 700px; margin: 20px auto;">
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="max-width: 750px; margin: 20px auto; font-size: 13px;">
         <div class="d-flex align-items-start">
             <i class="fas fa-exclamation-circle me-2 mt-1"></i>
             <div>
@@ -1116,7 +1248,7 @@ $(document).ready(function() {
 @endif
 
 @if (session('success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert" style="max-width: 700px; margin: 20px auto;">
+    <div class="alert alert-success alert-dismissible fade show" role="alert" style="max-width: 750px; margin: 20px auto; font-size: 13px;">
         <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>

@@ -9,17 +9,22 @@ use App\Models\Backup;
 
 @section('content')
 <style>
+    /* ============================================
+       🎯 STANDARDIZED FONT SIZES - SYSTEM SETTINGS
+       ============================================ */
+
+    /* ===== HEADER ===== */
     .settings-header {
-        background: linear-gradient(135deg, #1b5e20 0%, #0b7a33 100%);
-        border-radius: 20px;
-        padding: 30px 35px;
-        margin-bottom: 35px;
+        background: linear-gradient(135deg, #0b7a33, #056b28);
+        border-radius: 16px;
+        padding: 20px 30px;
+        margin-bottom: 30px;
         color: white;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         position: relative;
         overflow: hidden;
     }
-    
+
     .settings-header::before {
         content: '';
         position: absolute;
@@ -27,297 +32,348 @@ use App\Models\Backup;
         right: -50%;
         width: 200%;
         height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
         pointer-events: none;
     }
-    
+
     .settings-header h2 {
         margin: 0;
-        font-size: 28px;
+        font-size: 24px;
         font-weight: 700;
-        letter-spacing: -0.5px;
-    }
-    
-    .settings-header p {
-        margin: 10px 0 0;
-        opacity: 0.9;
-        font-size: 14px;
-    }
-    
-    .info-card {
-        background: white;
-        border-radius: 24px;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.06);
-        overflow: hidden;
-        margin-bottom: 35px;
-        transition: all 0.3s ease;
-        border: 1px solid #eef2f6;
-    }
-    
-    .info-card:hover {
-        box-shadow: 0 12px 40px rgba(0,0,0,0.1);
-    }
-    
-    .card-header-custom {
-        background: linear-gradient(135deg, #f8f9fa, #ffffff);
-        padding: 20px 28px;
-        border-bottom: 2px solid #e9ecef;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 15px;
-    }
-    
-    .card-header-custom h4 {
-        margin: 0;
-        color: #1b5e20;
-        font-weight: 700;
-        font-size: 20px;
+        position: relative;
+        z-index: 1;
+        color: #ffffff;
         display: flex;
         align-items: center;
         gap: 12px;
     }
-    
-    .card-header-custom h4 i {
-        font-size: 26px;
-        background: linear-gradient(135deg, #1b5e20, #0b7a33);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+
+    .settings-header h2 i {
+        font-size: 24px;
     }
-    
+
+    .settings-header p {
+        margin: 4px 0 0 0;
+        opacity: 0.85;
+        font-size: 14px;
+        position: relative;
+        z-index: 1;
+        padding-left: 44px;
+    }
+
+    /* ===== INFO CARDS ===== */
+    .info-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        overflow: hidden;
+        margin-bottom: 30px;
+        border: 1px solid #e9ecef;
+    }
+
+    .info-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    .card-header-custom {
+        background: #f8f9fa;
+        padding: 12px 24px;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .card-header-custom h4 {
+        margin: 0;
+        color: #0b7a33;
+        font-weight: 600;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .card-header-custom h4 i {
+        font-size: 18px;
+    }
+
     .badge-config {
         background: #e8f5e9;
-        color: #1b5e20;
-        padding: 6px 14px;
+        color: #0b7a33;
+        padding: 4px 14px;
         border-radius: 50px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
     }
-    
+
+    .card-body {
+        padding: 20px 24px;
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+        font-size: 13px;
+        font-weight: 500;
+        padding: 8px 20px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+        cursor: pointer;
+    }
+
     .btn-edit {
         background: linear-gradient(135deg, #ff9800, #f57c00);
-        border: none;
-        padding: 10px 28px;
-        border-radius: 50px;
         color: white;
-        font-weight: 600;
-        transition: all 0.3s ease;
         box-shadow: 0 2px 8px rgba(255,152,0,0.3);
     }
-    
+
     .btn-edit:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(255,152,0,0.4);
-    }
-    
-    .btn-save {
-        background: linear-gradient(135deg, #1b5e20, #0b7a33);
-        border: none;
-        padding: 12px 32px;
-        border-radius: 50px;
+        box-shadow: 0 6px 16px rgba(255,152,0,0.4);
         color: white;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 8px rgba(27,94,32,0.3);
     }
-    
+
+    .btn-save {
+        background: linear-gradient(135deg, #0b7a33, #056b28);
+        color: white;
+        box-shadow: 0 2px 8px rgba(11,122,51,0.3);
+    }
+
     .btn-save:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(27,94,32,0.4);
+        box-shadow: 0 6px 16px rgba(11,122,51,0.4);
+        color: white;
     }
-    
+
     .btn-cancel {
         background: #6c757d;
-        border: none;
-        padding: 12px 28px;
-        border-radius: 50px;
         color: white;
-        font-weight: 600;
-        transition: all 0.3s ease;
     }
-    
+
     .btn-cancel:hover {
         background: #5a6268;
         transform: translateY(-2px);
+        color: white;
     }
-    
+
     .btn-backup {
         background: linear-gradient(135deg, #0288d1, #01579b);
-        border: none;
-        padding: 12px 28px;
-        border-radius: 50px;
         color: white;
-        font-weight: 600;
-        transition: all 0.3s ease;
         box-shadow: 0 2px 8px rgba(2,136,209,0.3);
     }
-    
+
     .btn-backup:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(2,136,209,0.4);
+        box-shadow: 0 6px 16px rgba(2,136,209,0.4);
+        color: white;
     }
-    
+
+    /* ===== FORM ELEMENTS ===== */
     .form-group-custom {
-        margin-bottom: 22px;
+        margin-bottom: 18px;
     }
-    
+
     .form-group-custom label {
         font-weight: 600;
         color: #333;
-        margin-bottom: 10px;
+        margin-bottom: 6px;
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 14px;
+        font-size: 13px;
     }
-    
+
     .form-group-custom label i {
-        color: #1b5e20;
-        width: 20px;
+        color: #0b7a33;
+        width: 18px;
     }
-    
-    .readonly-text {
-        background: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 12px;
-        padding: 12px 16px;
-        color: #333;
-        font-size: 14px;
-        transition: all 0.2s ease;
-    }
-    
-    .readonly-text i {
-        color: #1b5e20;
-        margin-right: 10px;
-        width: 20px;
-    }
-    
+
     .form-control-custom {
-        border: 2px solid #e9ecef;
-        border-radius: 12px;
-        padding: 12px 16px;
+        border: 1.5px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 8px 14px;
         transition: all 0.3s ease;
         background-color: white;
         width: 100%;
+        font-size: 13px;
+        height: 38px;
     }
-    
+
     .form-control-custom:focus {
-        border-color: #1b5e20;
-        box-shadow: 0 0 0 4px rgba(27, 94, 32, 0.1);
+        border-color: #0b7a33;
+        box-shadow: 0 0 0 3px rgba(11, 122, 51, 0.1);
         outline: none;
     }
-    
-    .edit-mode {
-        display: none;
+
+    textarea.form-control-custom {
+        height: auto;
+        min-height: 70px;
+        resize: vertical;
     }
-    
-    .logo-preview {
-        margin-top: 12px;
-        padding: 12px;
+
+    .readonly-text {
         background: #f8f9fa;
-        border-radius: 12px;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 8px 14px;
+        color: #333;
+        font-size: 13px;
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .readonly-text i {
+        color: #0b7a33;
+        width: 18px;
+    }
+
+    .view-mode { display: block; }
+    .edit-mode { display: none; }
+
+    /* ===== LOGO PREVIEW ===== */
+    .logo-preview {
+        margin-top: 8px;
+        padding: 8px 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
         display: inline-block;
     }
-    
+
     .logo-preview img {
-        max-height: 70px;
-        border-radius: 10px;
-        border: 2px solid #e9ecef;
+        max-height: 60px;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
         padding: 4px;
         background: white;
     }
-    
+
+    /* ===== INFO BADGE ===== */
     .info-badge {
-        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-        border-radius: 16px;
-        padding: 18px 24px;
-        margin-top: 25px;
-        border-left: 5px solid #1b5e20;
+        background: #e8f5e9;
+        border-radius: 10px;
+        padding: 12px 18px;
+        margin-top: 18px;
+        border-left: 4px solid #0b7a33;
+        font-size: 13px;
+        color: #0b7a33;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 8px;
     }
-    
+
+    .info-badge i {
+        font-size: 16px;
+        margin-top: 1px;
+    }
+
+    .info-badge strong {
+        font-weight: 600;
+    }
+
+    .info-badge small {
+        font-size: 12px;
+        display: block;
+        margin-left: 0;
+        width: 100%;
+        color: #2e7d32;
+        padding-left: 24px;
+    }
+
+    /* ===== ACTION BUTTONS ===== */
     .action-buttons {
         display: none;
-        gap: 15px;
-        margin-top: 25px;
+        gap: 12px;
+        margin-top: 18px;
         justify-content: flex-end;
-        padding-top: 20px;
-        border-top: 2px dashed #e9ecef;
+        padding-top: 16px;
+        border-top: 1px dashed #e9ecef;
     }
-    
+
     .action-buttons.show {
         display: flex;
     }
-    
+
     .backup-actions {
         display: flex;
-        gap: 15px;
-        margin-top: 25px;
+        gap: 12px;
+        margin-top: 18px;
         justify-content: flex-end;
+        flex-wrap: wrap;
     }
-    
+
+    /* ===== FILE INPUT ===== */
     .file-input-wrapper {
         position: relative;
     }
-    
+
     .file-input-wrapper input[type="file"] {
         display: none;
     }
-    
+
     .file-input-label {
         background: #e9ecef;
-        padding: 10px 18px;
-        border-radius: 10px;
+        padding: 8px 16px;
+        border-radius: 8px;
         cursor: pointer;
         display: inline-block;
-        color: #1b5e20;
+        color: #0b7a33;
         font-weight: 500;
+        font-size: 13px;
         transition: all 0.3s ease;
     }
-    
+
     .file-input-label:hover {
-        background: #1b5e20;
+        background: #0b7a33;
         color: white;
     }
-    
+
     /* ===== BACKUP STATUS CARDS ===== */
     .backup-status-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-        margin: 25px 0 10px 0;
+        gap: 16px;
+        margin: 18px 0 8px 0;
     }
 
     .backup-status-card {
         background: #f8f9fa;
-        border-radius: 16px;
-        padding: 20px 24px;
+        border-radius: 10px;
+        padding: 14px 18px;
         display: flex;
         align-items: center;
-        gap: 18px;
+        gap: 14px;
         border: 1px solid #e9ecef;
         transition: all 0.3s ease;
     }
 
     .backup-status-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
     }
 
     .backup-status-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 14px;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 22px;
+        font-size: 18px;
         flex-shrink: 0;
     }
 
     .backup-status-card:first-child .backup-status-icon {
         background: #e8f5e9;
-        color: #1b5e20;
+        color: #0b7a33;
     }
 
     .backup-status-card:last-child .backup-status-icon {
@@ -330,7 +386,7 @@ use App\Models\Backup;
     }
 
     .backup-status-label {
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -339,25 +395,25 @@ use App\Models\Backup;
     }
 
     .backup-status-value {
-        font-size: 16px;
+        font-size: 14px;
         font-weight: 600;
         color: #1a1a2e;
     }
 
     .backup-status-value .text-muted {
         font-weight: 400;
-        font-size: 14px;
+        font-size: 13px;
     }
 
     .backup-status-badge {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 3px 14px;
+        gap: 4px;
+        padding: 2px 12px;
         border-radius: 50px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
-        margin-top: 4px;
+        margin-top: 2px;
     }
 
     .backup-status-badge.success {
@@ -379,74 +435,143 @@ use App\Models\Backup;
         background: #e9ecef;
         color: #6c757d;
     }
-    
-    hr {
-        margin: 25px 0;
-        border: none;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, #e9ecef, transparent);
-    }
-    
+
+    /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
+        .settings-header {
+            padding: 16px 20px;
+        }
+        .settings-header h2 {
+            font-size: 20px;
+        }
+        .settings-header p {
+            padding-left: 0;
+            font-size: 13px;
+        }
         .backup-status-grid {
             grid-template-columns: 1fr;
         }
         .backup-status-card {
-            flex-direction: column;
-            text-align: center;
-        }
-        .settings-header {
-            padding: 20px;
-        }
-        .settings-header h2 {
-            font-size: 22px;
+            flex-direction: row;
+            text-align: left;
         }
         .card-header-custom {
             flex-direction: column;
             align-items: flex-start;
+            padding: 12px 16px;
+        }
+        .card-header-custom h4 {
+            font-size: 14px;
+        }
+        .card-body {
+            padding: 16px;
         }
         .backup-actions {
             flex-direction: column;
         }
-        .backup-actions button {
+        .backup-actions .btn {
             width: 100%;
             justify-content: center;
         }
         .action-buttons {
             flex-direction: column;
         }
-        .action-buttons button {
+        .action-buttons .btn {
             width: 100%;
             justify-content: center;
+        }
+        .backup-status-value {
+            font-size: 13px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .settings-header h2 {
+            font-size: 18px;
+        }
+        .settings-header h2 i {
+            font-size: 18px;
+        }
+        .settings-header p {
+            font-size: 12px;
+        }
+        .card-header-custom h4 {
+            font-size: 13px;
+        }
+        .card-header-custom h4 i {
+            font-size: 15px;
+        }
+        .form-group-custom label {
+            font-size: 12px;
+        }
+        .form-control-custom {
+            font-size: 12px;
+            height: 34px;
+            padding: 6px 12px;
+        }
+        .readonly-text {
+            font-size: 12px;
+            min-height: 34px;
+            padding: 6px 12px;
+        }
+        .btn {
+            font-size: 12px;
+            padding: 6px 16px;
+        }
+        .info-badge {
+            font-size: 12px;
+            padding: 10px 14px;
+        }
+        .info-badge small {
+            font-size: 11px;
+            padding-left: 0;
+        }
+        .backup-status-value {
+            font-size: 12px;
+        }
+        .backup-status-label {
+            font-size: 10px;
+        }
+        .badge-config {
+            font-size: 10px;
+            padding: 2px 10px;
+        }
+        .file-input-label {
+            font-size: 12px;
+            padding: 6px 14px;
+        }
+        .logo-preview img {
+            max-height: 45px;
         }
     }
 </style>
 
 <div class="container-fluid px-0">
-    <!-- Header -->
+    <!-- ===== HEADER ===== -->
     <div class="settings-header">
         <h2>
-            <i class="fas fa-sliders-h me-3"></i> System Configuration
+            <i class="fas fa-sliders-h"></i>
+            System Configuration
         </h2>
         <p>Manage pharmacy details and data backup preferences</p>
     </div>
 
-    <!-- ========== SECTION 1: PHARMACY INFORMATION ========== -->
+    <!-- ===== SECTION 1: PHARMACY INFORMATION ===== -->
     <div class="info-card">
         <div class="card-header-custom">
             <h4>
-                <i class="fas fa-building"></i> 
+                <i class="fas fa-building"></i>
                 Pharmacy Information
             </h4>
-            <button type="button" id="editPharmacyBtn" class="btn-edit">
+            <button type="button" id="editPharmacyBtn" class="btn btn-edit">
                 <i class="fas fa-edit me-2"></i> Edit Information
             </button>
         </div>
-        
-        <div class="card-body p-4">
+
+        <div class="card-body">
             <form id="pharmacyForm" action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data">
                 @csrf
-                
+
                 <div class="row">
                     <div class="col-md-6">
                         <!-- Pharmacy Name -->
@@ -455,10 +580,10 @@ use App\Models\Backup;
                             <div class="readonly-text view-mode">
                                 <i class="fas fa-store"></i> {{ $settings['pharmacy_name'] ?? 'AER Pharmacy' }}
                             </div>
-                            <input type="text" name="pharmacy_name" class="form-control-custom edit-mode" 
+                            <input type="text" name="pharmacy_name" class="form-control-custom edit-mode"
                                    value="{{ $settings['pharmacy_name'] ?? '' }}" required>
                         </div>
-                        
+
                         <!-- Address -->
                         <div class="form-group-custom">
                             <label><i class="fas fa-map-marker-alt"></i> Address</label>
@@ -467,18 +592,18 @@ use App\Models\Backup;
                             </div>
                             <textarea name="pharmacy_address" class="form-control-custom edit-mode" rows="3">{{ $settings['pharmacy_address'] ?? '' }}</textarea>
                         </div>
-                        
+
                         <!-- Contact Number -->
                         <div class="form-group-custom">
                             <label><i class="fas fa-phone-alt"></i> Contact Number</label>
                             <div class="readonly-text view-mode">
                                 <i class="fas fa-phone"></i> {{ $settings['pharmacy_contact'] ?? 'Not set' }}
                             </div>
-                            <input type="text" name="pharmacy_contact" class="form-control-custom edit-mode" 
+                            <input type="text" name="pharmacy_contact" class="form-control-custom edit-mode"
                                    value="{{ $settings['pharmacy_contact'] ?? '' }}">
                         </div>
                     </div>
-                    
+
                     <div class="col-md-6">
                         <!-- Email -->
                         <div class="form-group-custom">
@@ -486,20 +611,20 @@ use App\Models\Backup;
                             <div class="readonly-text view-mode">
                                 <i class="fas fa-envelope"></i> {{ $settings['pharmacy_email'] ?? 'Not set' }}
                             </div>
-                            <input type="email" name="pharmacy_email" class="form-control-custom edit-mode" 
+                            <input type="email" name="pharmacy_email" class="form-control-custom edit-mode"
                                    value="{{ $settings['pharmacy_email'] ?? '' }}">
                         </div>
-                        
+
                         <!-- TIN -->
                         <div class="form-group-custom">
                             <label><i class="fas fa-id-card"></i> TIN Number</label>
                             <div class="readonly-text view-mode">
                                 <i class="fas fa-id-card"></i> {{ $settings['pharmacy_tin'] ?? 'Not set' }}
                             </div>
-                            <input type="text" name="pharmacy_tin" class="form-control-custom edit-mode" 
+                            <input type="text" name="pharmacy_tin" class="form-control-custom edit-mode"
                                    value="{{ $settings['pharmacy_tin'] ?? '' }}">
                         </div>
-                        
+
                         <!-- Logo -->
                         <div class="form-group-custom">
                             <label><i class="fas fa-image"></i> Pharmacy Logo</label>
@@ -519,31 +644,31 @@ use App\Models\Backup;
                                         <input type="file" name="pharmacy_logo" accept="image/jpeg,image/png,image/jpg">
                                     </label>
                                 </div>
-                                <small class="text-muted d-block mt-2">Recommended: 200x200px, Max: 2MB (JPG, PNG)</small>
+                                <small class="text-muted d-block mt-2" style="font-size: 12px;">Recommended: 200x200px, Max: 2MB (JPG, PNG)</small>
                                 @if(!empty($settings['pharmacy_logo']))
                                     <div class="logo-preview mt-2">
                                         <img src="{{ asset('storage/' . $settings['pharmacy_logo']) }}" alt="Current" height="45">
-                                        <small class="d-block text-success">Current logo</small>
+                                        <small class="d-block text-success" style="font-size: 12px;">Current logo</small>
                                     </div>
                                 @endif
                             </div>
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="info-badge">
                     <i class="fas fa-lightbulb"></i>
-                    <strong>📌 Usage Guide:</strong><br>
-                    <small>• Pharmacy Name & Logo appear on receipts, reports, and system header</small><br>
+                    <strong>📌 Usage Guide:</strong>
+                    <small>• Pharmacy Name & Logo appear on receipts, reports, and system header</small>
                     <small>• Address, Contact, Email, and TIN are used for official documents</small>
                 </div>
-                
+
                 <!-- Action Buttons -->
                 <div id="pharmacyActions" class="action-buttons">
-                    <button type="button" id="cancelPharmacyBtn" class="btn-cancel">
+                    <button type="button" id="cancelPharmacyBtn" class="btn btn-cancel">
                         <i class="fas fa-times me-2"></i> Cancel
                     </button>
-                    <button type="submit" class="btn-save">
+                    <button type="submit" class="btn btn-save">
                         <i class="fas fa-save me-2"></i> Save Changes
                     </button>
                 </div>
@@ -551,22 +676,22 @@ use App\Models\Backup;
         </div>
     </div>
 
-    <!-- ========== SECTION 2: BACKUP & RECOVERY ========== -->
+    <!-- ===== SECTION 2: BACKUP & RECOVERY ===== -->
     <div class="info-card">
         <div class="card-header-custom">
             <h4>
-                <i class="fas fa-database"></i> 
+                <i class="fas fa-database"></i>
                 Database Backup
             </h4>
             <span class="badge-config"><i class="fas fa-shield-alt me-1"></i> Data Protection</span>
         </div>
-        
-        <div class="card-body p-4">
+
+        <div class="card-body">
             <div class="row">
                 <div class="col-md-6">
                     <div class="form-group-custom">
                         <label><i class="fas fa-calendar-alt"></i> Auto Backup Schedule</label>
-                        <select class="form-control-custom" id="backup_schedule" onchange="updateNextBackup()">
+                        <select class="form-control-custom" id="backup_schedule">
                             @php
                                 $backupSchedule = Setting::get('backup_schedule', 'weekly');
                             @endphp
@@ -575,21 +700,21 @@ use App\Models\Backup;
                             <option value="monthly" {{ $backupSchedule == 'monthly' ? 'selected' : '' }}>📆 Monthly</option>
                             <option value="disabled" {{ $backupSchedule == 'disabled' ? 'selected' : '' }}>⛔ Disabled</option>
                         </select>
-                        <small class="text-muted">How often to automatically backup database</small>
+                        <small class="text-muted" style="font-size: 12px;">How often to automatically backup database</small>
                     </div>
                 </div>
-                
+
                 <div class="col-md-6">
                     <div class="form-group-custom">
                         <label><i class="fas fa-clock"></i> Backup Retention</label>
-                        <input type="number" id="backup_retention" class="form-control-custom" 
+                        <input type="number" id="backup_retention" class="form-control-custom"
                                value="{{ Setting::get('backup_retention', '30') }}" min="1" max="365">
-                        <small class="text-muted">Days to keep old backups before deletion</small>
+                        <small class="text-muted" style="font-size: 12px;">Days to keep old backups before deletion</small>
                     </div>
                 </div>
             </div>
 
-            <!-- ===== BACKUP STATUS CARDS ===== -->
+            <!-- Backup Status Cards -->
             <div class="backup-status-grid">
                 <!-- Last Backup -->
                 <div class="backup-status-card">
@@ -651,7 +776,7 @@ use App\Models\Backup;
                         </div>
                         <div class="backup-status-badge" id="nextBackupBadge">
                             @if($nextBackup)
-                                <i class="fas fa-hourglass-half"></i> 
+                                <i class="fas fa-hourglass-half"></i>
                                 @switch($schedule)
                                     @case('daily') Daily @break
                                     @case('weekly') Weekly @break
@@ -667,20 +792,20 @@ use App\Models\Backup;
                     </div>
                 </div>
             </div>
-            
+
             <div class="info-badge">
                 <i class="fas fa-lightbulb"></i>
-                <strong>📌 Data Safety:</strong><br>
-                <small>• Prevents data loss (products, sales, users, inventory)</small><br>
-                <small>• Automatic backups run according to schedule</small><br>
+                <strong>📌 Data Safety:</strong>
+                <small>• Prevents data loss (products, sales, users, inventory)</small>
+                <small>• Automatic backups run according to schedule</small>
                 <small>• Old backups are automatically deleted based on retention period</small>
             </div>
-            
+
             <div class="backup-actions">
-                <button type="button" id="saveBackupBtn" class="btn-save">
+                <button type="button" id="saveBackupBtn" class="btn btn-save">
                     <i class="fas fa-save me-2"></i> Save Backup Settings
                 </button>
-                <button type="button" id="backupNowBtn" class="btn-backup">
+                <button type="button" id="backupNowBtn" class="btn btn-backup">
                     <i class="fas fa-database me-2"></i> Create Backup Now
                 </button>
             </div>
@@ -688,11 +813,16 @@ use App\Models\Backup;
     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
 $(document).ready(function() {
     let isEditMode = false;
-    
-    // Toggle Edit Mode for Pharmacy Section
+
+    // ============================================
+    // TOGGLE EDIT MODE
+    // ============================================
     $('#editPharmacyBtn').on('click', function() {
         if (!isEditMode) {
             isEditMode = true;
@@ -701,15 +831,6 @@ $(document).ready(function() {
             $('#pharmacyActions').addClass('show');
             $(this).html('<i class="fas fa-times me-2"></i> Cancel Edit');
             $(this).removeClass('btn-edit').addClass('btn-cancel');
-            
-            Swal.fire({
-                icon: 'info',
-                title: 'Edit Mode Enabled',
-                text: 'You can now edit pharmacy information.',
-                confirmButtonColor: '#1b5e20',
-                timer: 2000,
-                showConfirmButton: false
-            });
         } else {
             isEditMode = false;
             $('.view-mode').show();
@@ -717,19 +838,12 @@ $(document).ready(function() {
             $('#pharmacyActions').removeClass('show');
             $(this).html('<i class="fas fa-edit me-2"></i> Edit Information');
             $(this).removeClass('btn-cancel').addClass('btn-edit');
-            
-            Swal.fire({
-                icon: 'info',
-                title: 'Edit Cancelled',
-                text: 'Changes were not saved.',
-                confirmButtonColor: '#1b5e20',
-                timer: 2000,
-                showConfirmButton: false
-            });
         }
     });
-    
-    // Cancel Button inside Pharmacy Form
+
+    // ============================================
+    // CANCEL EDIT
+    // ============================================
     $('#cancelPharmacyBtn').on('click', function() {
         isEditMode = false;
         $('.view-mode').show();
@@ -737,29 +851,22 @@ $(document).ready(function() {
         $('#pharmacyActions').removeClass('show');
         $('#editPharmacyBtn').html('<i class="fas fa-edit me-2"></i> Edit Information');
         $('#editPharmacyBtn').removeClass('btn-cancel').addClass('btn-edit');
-        
-        Swal.fire({
-            icon: 'info',
-            title: 'Edit Cancelled',
-            text: 'Changes were discarded.',
-            confirmButtonColor: '#1b5e20',
-            timer: 2000,
-            showConfirmButton: false
-        });
     });
-    
-    // Pharmacy Form Submit
+
+    // ============================================
+    // PHARMACY FORM SUBMIT
+    // ============================================
     $('#pharmacyForm').on('submit', function(e) {
         e.preventDefault();
         var formData = new FormData(this);
-        
+
         Swal.fire({
             title: 'Saving...',
             text: 'Please wait while we save your information.',
             allowOutsideClick: false,
             didOpen: () => Swal.showLoading()
         });
-        
+
         $.ajax({
             url: $(this).attr('action'),
             type: 'POST',
@@ -774,7 +881,7 @@ $(document).ready(function() {
                     icon: 'success',
                     title: 'Success!',
                     text: response.message || 'Pharmacy information updated!',
-                    confirmButtonColor: '#1b5e20'
+                    confirmButtonColor: '#0b7a33'
                 }).then(() => {
                     location.reload();
                 });
@@ -791,8 +898,10 @@ $(document).ready(function() {
             }
         });
     });
-    
-    // File input preview
+
+    // ============================================
+    // FILE INPUT PREVIEW
+    // ============================================
     $('input[type="file"]').on('change', function(e) {
         var file = e.target.files[0];
         if (file) {
@@ -803,18 +912,20 @@ $(document).ready(function() {
             reader.readAsDataURL(file);
         }
     });
-    
-    // ===== SAVE BACKUP SETTINGS =====
+
+    // ============================================
+    // SAVE BACKUP SETTINGS
+    // ============================================
     $('#saveBackupBtn').on('click', function() {
         var schedule = $('#backup_schedule').val();
         var retention = $('#backup_retention').val();
-        
+
         Swal.fire({
             title: 'Save Backup Settings?',
             html: 'Schedule: <strong>' + schedule + '</strong><br>Retention: <strong>' + retention + ' days</strong>',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#1b5e20',
+            confirmButtonColor: '#0b7a33',
             cancelButtonColor: '#6c757d',
             confirmButtonText: 'Save Settings',
             cancelButtonText: 'Cancel'
@@ -827,7 +938,7 @@ $(document).ready(function() {
                         Swal.showLoading();
                     }
                 });
-                
+
                 $.ajax({
                     url: '{{ route("backup.settings") }}',
                     type: 'POST',
@@ -842,7 +953,7 @@ $(document).ready(function() {
                                 icon: 'success',
                                 title: 'Saved!',
                                 text: response.message,
-                                confirmButtonColor: '#1b5e20'
+                                confirmButtonColor: '#0b7a33'
                             }).then(function() {
                                 location.reload();
                             });
@@ -860,8 +971,10 @@ $(document).ready(function() {
             }
         });
     });
-    
-    // ===== CREATE BACKUP NOW =====
+
+    // ============================================
+    // CREATE BACKUP NOW
+    // ============================================
     $('#backupNowBtn').on('click', function() {
         Swal.fire({
             title: 'Create Backup Now?',
@@ -882,7 +995,7 @@ $(document).ready(function() {
                         Swal.showLoading();
                     }
                 });
-                
+
                 $.ajax({
                     url: '{{ route("backup.create") }}',
                     type: 'POST',
@@ -896,7 +1009,7 @@ $(document).ready(function() {
                                 icon: 'success',
                                 title: 'Backup Created!',
                                 text: response.message,
-                                confirmButtonColor: '#1b5e20'
+                                confirmButtonColor: '#0b7a33'
                             }).then(function() {
                                 location.reload();
                             });
@@ -923,4 +1036,4 @@ $(document).ready(function() {
     });
 });
 </script>
-@endsection
+@endsection 

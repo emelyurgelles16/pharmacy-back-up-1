@@ -10,13 +10,14 @@ class ProductBatch extends Model
 {
     use HasFactory;
 
-    protected $table = 'product_batches'; // ✅ Specify table name
+    protected $table = 'product_batches';
 
     protected $fillable = [
         'product_id',
         'quantity',
         'pieces_per_box',
         'pieces_left',
+        'total_pieces',
         'expiry_date',
         'arrival_date',
         'batch_number'
@@ -30,10 +31,10 @@ class ProductBatch extends Model
     // Relationship with Product
     public function product()
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class, 'product_id');
     }
 
-    // ✅ FIXED: Get total pieces (calculated, not stored)
+    // Get total pieces (calculated)
     public function getTotalPiecesAttribute()
     {
         return $this->quantity * $this->pieces_per_box;

@@ -4,6 +4,10 @@
 
 @section('content')
 <style>
+/* ============================================
+   🎯 STANDARDIZED FONT SIZES - DOSAGE FORMS
+   ============================================ */
+
 /* === HEADER === */
 .header-box {
     background: #056b28;
@@ -11,14 +15,14 @@
     padding: 20px 30px;
     border-radius: 12px;
     margin-bottom: 30px;
-    text-align: center;
+    text-align: left;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .header-box h2 {
     margin: 0;
-    font-size: 24px;
-    font-weight: 600;
+    font-size: 22px;
+    font-weight: 700;
 }
 
 .header-box h2 i {
@@ -54,20 +58,22 @@
 
 .toolbar label {
     margin-right: 8px;
-    font-weight: 500;
+    font-weight: 600;
     color: #333;
     white-space: nowrap;
+    font-size: 13px;
 }
 
 .toolbar input {
     padding: 10px 16px;
     border-radius: 8px;
     border: 1px solid #ddd;
-    font-size: 14px;
+    font-size: 13px;
     outline: none;
     height: 40px;
     box-sizing: border-box;
     width: 250px;
+    transition: all 0.3s ease;
 }
 
 .toolbar input:focus {
@@ -89,6 +95,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    font-size: 13px;
 }
 
 .toolbar .btn-add:hover {
@@ -152,7 +159,7 @@
 .card-header h6 {
     margin: 0;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 15px;
 }
 
 .card-header h6 i {
@@ -163,7 +170,7 @@
     padding: 0 !important;
 }
 
-/* === TABLE === */
+/* === TABLE WITH BORDER LINES === */
 .table-responsive {
     overflow-x: auto;
 }
@@ -179,18 +186,19 @@
     background: #f5f7fa;
     color: #333;
     font-weight: 600;
-    font-size: 11px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     padding: 10px 12px;
-    border-bottom: 2px solid #e9ecef;
+    border: 1px solid #dee2e6;
     text-align: left;
 }
 
 .table-mini tbody td {
     padding: 9px 12px;
-    border-bottom: 1px solid #f0f0f0;
+    border: 1px solid #dee2e6;
     vertical-align: middle;
+    font-size: 13px;
 }
 
 .table-mini tbody tr:hover {
@@ -198,7 +206,7 @@
 }
 
 .table-mini tbody tr:last-child td {
-    border-bottom: none;
+    border-bottom: 1px solid #dee2e6;
 }
 
 /* === BADGES === */
@@ -214,33 +222,30 @@
     text-align: center;
 }
 
-.badge-slug {
-    background: #f5f5f5;
-    color: #666;
-    padding: 2px 10px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-family: monospace;
-}
-
-/* === ACTION BUTTONS === */
+/* === ACTION BUTTONS WITH TEXT === */
 .action-group {
     display: flex;
-    gap: 5px;
+    gap: 6px;
     justify-content: center;
+    flex-wrap: wrap;
 }
 
 .btn-action {
-    width: 32px;
-    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
+    font-weight: 600;
     transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    white-space: nowrap;
+}
+
+.btn-action i {
+    font-size: 12px;
 }
 
 .btn-action.btn-edit {
@@ -251,6 +256,8 @@
 .btn-action.btn-edit:hover {
     background: #1565c0;
     color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(21, 101, 192, 0.3);
 }
 
 .btn-action.btn-delete {
@@ -261,6 +268,8 @@
 .btn-action.btn-delete:hover {
     background: #c62828;
     color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(198, 40, 40, 0.3);
 }
 
 /* === PAGINATION === */
@@ -288,7 +297,7 @@
     border: 1px solid #ddd;
     text-decoration: none;
     color: #333;
-    font-size: 12px;
+    font-size: 13px;
     min-width: 30px;
     text-align: center;
     height: 30px;
@@ -335,22 +344,8 @@
 }
 
 .empty-state small {
+    font-size: 12px;
     color: #aaa;
-}
-
-/* === NOTIFICATION === */
-#notification {
-    position: fixed;
-    top: 18px;
-    right: 18px;
-    padding: 12px 18px;
-    border-radius: 10px;
-    color: #fff;
-    display: none;
-    z-index: 2000;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-    font-weight: 600;
-    font-size: 13px;
 }
 
 /* === MODAL - EDIT === */
@@ -369,7 +364,7 @@
 }
 
 .modal-content-edit .modal-header h6 {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     margin: 0;
 }
@@ -391,7 +386,7 @@
 }
 
 .modal-content-edit .form-label {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: #333;
     margin-bottom: 5px;
@@ -401,7 +396,7 @@
     border-radius: 8px;
     border: 2px solid #e9ecef;
     padding: 10px 14px;
-    font-size: 14px;
+    font-size: 13px;
     width: 100%;
 }
 
@@ -467,7 +462,7 @@
 }
 
 .modal-content-add .modal-header h5 {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
     margin: 0;
 }
@@ -484,7 +479,7 @@
 }
 
 .modal-content-add .form-label-add {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: #333;
     margin-bottom: 5px;
@@ -494,7 +489,7 @@
     border-radius: 8px;
     border: 2px solid #e9ecef;
     padding: 10px 14px;
-    font-size: 14px;
+    font-size: 13px;
     width: 100%;
 }
 
@@ -512,7 +507,7 @@
 .modal-content-add .btn-cancel-add {
     border-radius: 6px;
     padding: 8px 22px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     background: #6c757d;
     color: white;
@@ -526,7 +521,7 @@
 .modal-content-add .btn-save-add {
     border-radius: 6px;
     padding: 8px 22px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     background: #1b5e20;
     color: white;
@@ -561,6 +556,39 @@
     .table-mini tbody td {
         padding: 6px 8px;
     }
+    .header-box h2 {
+        font-size: 20px;
+    }
+    .btn-action {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+    .btn-action i {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 576px) {
+    .header-box h2 {
+        font-size: 18px;
+    }
+    .table-mini {
+        font-size: 11px;
+    }
+    .table-mini thead th,
+    .table-mini tbody td {
+        padding: 4px 6px;
+    }
+    .btn-action {
+        padding: 3px 6px;
+        font-size: 10px;
+    }
+    .btn-action i {
+        font-size: 10px;
+    }
+    .modal-title {
+        font-size: 16px;
+    }
 }
 </style>
 
@@ -574,7 +602,7 @@
     <div class="toolbar">
         <div class="toolbar-left">
             <div class="search-group">
-                <label>Search:</label>
+                <label><i class="fa-solid fa-search me-1"></i> Search:</label>
                 <input type="text" id="searchBox" placeholder="Search dosage forms..." value="{{ request('search') }}">
                 <button id="resetBtn" class="btn-reset">
                     <i class="fa-solid fa-rotate-right"></i> Reset
@@ -598,13 +626,11 @@
                 <table class="table-mini" id="dosageFormsTable">
                     <thead>
                         <tr>
-                            <th style="width:50px;">No.</th>
-                            <th>Form Name</th>
-                            <th style="width:120px;">Slug</th>
-                            <th style="width:80px;">Unit</th>
-                            <th>Description</th>
-                            <th style="width:150px;">Date Created</th>
-                            <th style="width:90px; text-align:center;">Action</th>
+                            <th style="width:5%;">No.</th>
+                            <th style="width:20%;">Form Name</th>
+                            <th style="width:30%;">Description</th>
+                            <th style="width:18%;">Date Created</th>
+                            <th style="width:20%; text-align:center;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -612,8 +638,6 @@
                         <tr id="row-{{ $form->id }}">
                             <td><span class="badge-no">{{ $loop->iteration }}</span></td>
                             <td><strong>{{ $form->name }}</strong></td>
-                            <td><span class="badge-slug">{{ $form->slug }}</span></td>
-                            <td><span class="badge-slug">{{ $form->abbreviation ?? '—' }}</span></td>
                             <td>{{ $form->description ?? '—' }}</td>
                             <td style="font-size:12px; color:#888;">{{ $form->created_at ? $form->created_at->format('M d, Y h:i A') : '—' }}</td>
                             <td style="text-align:center;">
@@ -623,19 +647,19 @@
                                             data-name="{{ $form->name }}"
                                             data-unit="{{ $form->abbreviation ?? '' }}"
                                             data-description="{{ $form->description ?? '' }}">
-                                        <i class="fa-solid fa-pencil"></i>
+                                        <i class="fa-solid fa-pencil"></i> Edit
                                     </button>
                                     <button class="btn-action btn-delete" 
                                             data-id="{{ $form->id }}" 
                                             data-name="{{ $form->name }}">
-                                        <i class="fa-solid fa-trash"></i>
+                                        <i class="fa-solid fa-trash"></i> Delete
                                     </button>
                                 </div>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7">
+                            <td colspan="5">
                                 <div class="empty-state">
                                     <i class="fa-solid fa-inbox"></i>
                                     <div>No dosage forms found.</div>
@@ -813,9 +837,6 @@
     </div>
 </div>
 
-<!-- Notification -->
-<div id="notification"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -831,17 +852,61 @@ function capitalizeFirstLetter(input) {
 }
 
 // ============================================
-// SEARCH
+// LIVE SEARCH - AUTO-RESPONSIVE
 // ============================================
-function applySearch() {
-    const search = document.getElementById('searchBox').value;
-    let url = '{{ route("dosage-forms.index") }}?';
-    if (search) url += 'search=' + encodeURIComponent(search);
-    window.location.href = url;
+function performLiveSearch() {
+    const search = document.getElementById('searchBox').value.trim().toLowerCase();
+    const rows = document.querySelectorAll('#tableBody tr');
+    let visibleCount = 0;
+    let hasResults = false;
+    
+    rows.forEach(row => {
+        if (row.querySelector('.empty-state')) {
+            return;
+        }
+        
+        const text = row.textContent.toLowerCase();
+        
+        if (search === '' || text.includes(search)) {
+            row.style.display = '';
+            visibleCount++;
+            hasResults = true;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    const emptyState = document.querySelector('.empty-state');
+    if (emptyState) {
+        if (search !== '' && !hasResults) {
+            const tbody = document.getElementById('tableBody');
+            const existingMsg = document.getElementById('noResultsMsg');
+            if (!existingMsg) {
+                const tr = document.createElement('tr');
+                tr.id = 'noResultsMsg';
+                tr.innerHTML = `
+                    <td colspan="5">
+                        <div class="empty-state" style="padding: 20px;">
+                            <i class="fa-solid fa-search" style="font-size: 30px;"></i>
+                            <div style="margin-top: 10px; font-size: 14px;">No results found for "<strong>${search}</strong>"</div>
+                            <small>Try adjusting your search terms.</small>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+        } else {
+            const msg = document.getElementById('noResultsMsg');
+            if (msg) msg.remove();
+        }
+    }
 }
 
-document.getElementById('searchBox').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') applySearch();
+// ============================================
+// SEARCH EVENT
+// ============================================
+document.getElementById('searchBox').addEventListener('input', function() {
+    performLiveSearch();
 });
 
 // ============================================
@@ -849,28 +914,14 @@ document.getElementById('searchBox').addEventListener('keypress', function(e) {
 // ============================================
 document.getElementById('resetBtn').addEventListener('click', function() {
     document.getElementById('searchBox').value = '';
-    window.location.href = '{{ route("dosage-forms.index") }}';
-    showNotif('🔄 Search has been reset!', 'success');
+    performLiveSearch();
 });
-
-// ============================================
-// NOTIFICATION
-// ============================================
-function showNotif(msg, type = 'success') {
-    const el = document.getElementById('notification');
-    const colors = { success: '#1b5e20', created: '#1b5e20', updated: '#f57c00', deleted: '#c62828', error: '#c62828' };
-    el.style.background = colors[type] || '#1b5e20';
-    el.innerHTML = msg;
-    el.style.display = 'block';
-    el.style.opacity = 1;
-    setTimeout(() => { el.style.opacity = 0; setTimeout(() => el.style.display = 'none', 300); }, 2000);
-}
 
 // ============================================
 // REFRESH TABLE
 // ============================================
 function refreshTable() {
-    applySearch();
+    window.location.reload();
 }
 
 // ============================================

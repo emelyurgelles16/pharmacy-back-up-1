@@ -20,6 +20,9 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\DosageFormController;
 use App\Http\Controllers\OtpController;
+use App\Http\Controllers\DrugClassification\DrugClassificationController;
+use App\Http\Controllers\NotificationController;
+
 
 // === REDIRECT ROOT TO LOGIN ===
 Route::get('/', function () {
@@ -78,6 +81,7 @@ Route::middleware('auth')->group(function () {
     // ==============User Management================
     
     Route::resource('users', UserController::class);
+    Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
     Route::get('/users/{id}/edit-data', [UserController::class, 'editData'])->name('users.edit-data');
     Route::get('/users/deleted', [UserController::class, 'deleted'])->name('users.deleted');
     Route::post('/users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
@@ -102,6 +106,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/inventory/batch/{id}', [InventoryController::class, 'getBatch']);
         Route::get('/inventory/batch/{id}/edit', [InventoryController::class, 'editBatch'])->name('inventory.batch.edit');
         Route::get('/inventory/{id}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
+        Route::get('/inventory/fetch-tab', [InventoryController::class, 'fetchTab'])->name('inventory.fetch-tab');
     });
 
     Route::middleware(['permission:view inventory'])->group(function () {
@@ -187,12 +192,23 @@ Route::middleware('auth')->group(function () {
         Route::post('/update', [SettingsController::class, 'update'])->name('settings.update');
         Route::get('/profile', [SettingsController::class, 'profile'])->name('settings.profile');
         Route::post('/update-profile', [SettingsController::class, 'updateProfile'])->name('settings.update-profile');
-        Route::get('/activity-logs', [SettingsController::class, 'activityLogs'])->name('settings.activity-logs');
+        
+        // ✅ REDIRECT old settings activity logs to new personal logs
+        Route::get('/activity-logs', function() {
+            return redirect()->route('activity-logs.personal');
+        })->name('settings.activity-logs');
+        
         Route::post('/activity-logs/filter', [SettingsController::class, 'filterActivityLogs'])->name('settings.activity-logs.filter');
     });
 
     // ========== ACTIVITY LOGS ROUTES ==========
-    Route::prefix('activity-logs')->middleware('permission:view logs')->group(function () {
+    // ✅ Personal logs (for all users - no permission required)
+    Route::prefix('activity-logs')->middleware('auth')->group(function () {
+        Route::get('/personal', [ActivityLogController::class, 'personalLogs'])->name('activity-logs.personal');
+    });
+    
+    // ✅ All logs (Admin only - requires permission)
+    Route::prefix('activity-logs')->middleware(['auth', 'permission:view logs'])->group(function () {
         Route::get('/', [ActivityLogController::class, 'index'])->name('activity-logs.index');
         Route::get('/data', [ActivityLogController::class, 'getData'])->name('activity-logs.data');
         Route::post('/filter', [ActivityLogController::class, 'filter'])->name('activity-logs.filter');
@@ -247,6 +263,23 @@ Route::middleware('auth')->group(function () {
         Route::post('/create', [App\Http\Controllers\BackupController::class, 'createBackup'])->name('backup.create');
         Route::get('/status', [App\Http\Controllers\BackupController::class, 'getStatus'])->name('backup.status');
     });
+
+    // ========== DRUG CLASSIFICATION ROUTES ==========
+    Route::middleware(['auth', 'permission:view drug classifications'])->group(function () {
+        Route::get('/drug-classification', [DrugClassificationController::class, 'index'])->name('drug-classification.index');
+        Route::get('/drug-classification/create', [DrugClassificationController::class, 'create'])->name('drug-classification.create');
+        Route::post('/drug-classification', [DrugClassificationController::class, 'store'])->name('drug-classification.store');
+        Route::get('/drug-classification/{drugClassification}', [DrugClassificationController::class, 'show'])->name('drug-classification.show');
+        Route::get('/drug-classification/{drugClassification}/edit', [DrugClassificationController::class, 'edit'])->name('drug-classification.edit');
+        Route::put('/drug-classification/{drugClassification}', [DrugClassificationController::class, 'update'])->name('drug-classification.update');
+        Route::delete('/drug-classification/{drugClassification}', [DrugClassificationController::class, 'destroy'])->name('drug-classification.destroy');
+    });
+    
+    // ========== Notification Routes ==========
+Route::prefix('notifications')->middleware('auth')->group(function () {
+    Route::post('/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+});
 
     // ========== DOWNLOAD RESUME ==========
     Route::get('/download/resume/{id}', function($id) {

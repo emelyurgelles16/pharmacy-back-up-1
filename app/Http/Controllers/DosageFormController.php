@@ -25,7 +25,8 @@ class DosageFormController extends Controller
             }
         }
 
-        $dosageForms = $query->orderBy('name')->paginate(10);
+        // ✅ CHANGED FROM 10 TO 30 ITEMS PER PAGE
+        $dosageForms = $query->orderBy('name')->paginate(30);
 
         if ($request->ajax()) {
             return response()->json([

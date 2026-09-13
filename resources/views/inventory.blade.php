@@ -5,6 +5,10 @@
 @section('content')
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
+@php
+    $isCashier = auth()->user()->hasRole('Cashier');
+@endphp
+
 <style>
     /* === Header Box === */ 
     .header-box {
@@ -25,7 +29,7 @@
     }
 
     /* === TABS === */
-    @if(auth()->user()->hasRole('Cashier'))
+    @if($isCashier)
     .inventory-tabs {
         display: none !important;
     }
@@ -160,10 +164,6 @@
         box-shadow: 0 4px 12px rgba(27, 94, 32, 0.3);
     }
 
-    .toolbar button:active {
-        transform: translateY(0);
-    }
-
     /* === FILTER CONTAINER === */
     .filter-container {
         position: relative;
@@ -175,12 +175,6 @@
         border-radius: 10px;
         border: 1px solid #e8e8e8;
         z-index: 100;
-    }
-
-    .filter-container label {
-        margin-right: 4px;
-        color: #555;
-        font-size: 13px;
     }
 
     .filter-dropdown {
@@ -205,25 +199,6 @@
         background: #f5faf5;
     }
 
-    .filter-dropdown .filter-icon {
-        font-size: 14px;
-    }
-
-    .filter-dropdown .filter-text {
-        flex: 1;
-    }
-
-    .filter-dropdown .filter-arrow {
-        font-size: 10px;
-        color: #999;
-        transition: transform 0.3s ease;
-    }
-
-    .filter-dropdown.active .filter-arrow {
-        transform: rotate(180deg);
-    }
-
-    /* === FILTER MENU === */
     .filter-menu {
         display: none;
         position: absolute;
@@ -236,7 +211,6 @@
         z-index: 1000;
         min-width: 220px;
         padding: 8px 0;
-        overflow: visible;
         animation: fadeInDown 0.25s ease;
     }
 
@@ -244,7 +218,6 @@
         display: block;
     }
 
-    /* === FILTER OPTION === */
     .filter-option {
         padding: 10px 18px;
         cursor: pointer;
@@ -264,22 +237,6 @@
         border-left-color: #1b5e20;
     }
 
-    .filter-option .option-icon {
-        margin-right: 10px;
-        font-size: 14px;
-    }
-
-    .filter-option .submenu-arrow {
-        font-size: 12px;
-        color: #999;
-        margin-left: 15px;
-        transition: transform 0.3s ease;
-    }
-
-    .filter-option:hover .submenu-arrow {
-        color: #1b5e20;
-    }
-
     /* === SUBMENU === */
     .submenu {
         display: none;
@@ -290,59 +247,79 @@
         border: 1px solid #e0e0e0;
         border-radius: 12px;
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-        min-width: 180px;
-        padding: 8px 0;
+        min-width: 240px;
+        max-width: 280px;
         z-index: 1001;
+        overflow: hidden;
         animation: fadeInRight 0.25s ease;
     }
 
     .submenu.show {
-        display: block;
+        display: flex;
+        flex-direction: column;
+        max-height: 400px;
+    }
+
+    .submenu-search {
+        padding: 8px 10px;
+        border-bottom: 1px solid #f0f0f0;
+        background: #fafbfc;
+        flex-shrink: 0;
+    }
+
+    .submenu-search-input {
+        width: 100%;
+        padding: 6px 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        font-size: 12px;
+        outline: none;
+        background: white;
+    }
+
+    .submenu-list {
+        overflow-y: auto;
+        max-height: 320px;
+        padding: 4px 0;
+    }
+
+    .submenu-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .submenu-list::-webkit-scrollbar-thumb {
+        background: #1b5e20;
+        border-radius: 4px;
     }
 
     .submenu .filter-option {
         padding: 8px 18px;
         font-size: 13px;
-        border-left: 3px solid transparent;
         min-height: 35px;
     }
 
-    .submenu .filter-option:hover {
-        background: #f1f8e9;
-        border-left-color: #1b5e20;
+    .submenu .filter-option.hidden {
+        display: none;
     }
 
-    .submenu .filter-option.active {
-        background: #e8f5e9;
-        border-left-color: #1b5e20;
-        color: #1b5e20;
-        font-weight: 600;
+    .no-results-msg {
+        padding: 12px 18px;
+        text-align: center;
+        color: #999;
+        font-size: 12px;
+        font-style: italic;
     }
 
-    /* === ANIMATIONS === */
     @keyframes fadeInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes fadeInRight {
-        from {
-            opacity: 0;
-            transform: translateX(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
+        from { opacity: 0; transform: translateX(-10px); }
+        to { opacity: 1; transform: translateX(0); }
     }
 
-    /* === RESET BUTTON === */
     .filter-reset-btn {
         background: #f5f5f5 !important;
         color: #666 !important;
@@ -353,59 +330,18 @@
         font-size: 12px !important;
         font-weight: 600 !important;
         cursor: pointer !important;
-        transition: all 0.3s ease !important;
         display: flex !important;
         align-items: center !important;
         gap: 6px !important;
-        white-space: nowrap;
     }
 
     .filter-reset-btn:hover {
         background: #e53935 !important;
         color: white !important;
-        border-color: #e53935 !important;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3);
     }
 
-    /* === Barcode Search === */
-    .barcode-search-container {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        background: #f8f9fa;
-        padding: 4px 12px 4px 4px;
-        border-radius: 10px;
-        border: 1px solid #e8e8e8;
-    }
-
-    .barcode-search-container label {
-        font-size: 13px;
-        color: #555;
-        padding-left: 8px;
-    }
-
-    .barcode-search-container input {
-        border: none !important;
-        background: transparent !important;
-        padding: 8px 10px !important;
-        height: 36px !important;
-        width: 180px !important;
-        font-family: monospace !important;
-        font-size: 13px !important;
-    }
-
-    .barcode-search-container input:focus {
-        box-shadow: none !important;
-        border: none !important;
-    }
-
-    .barcode-search-container input::placeholder {
-        color: #aaa;
-        font-family: Arial, sans-serif;
-    }
-
-    /* === Search Box === */
+    /* === Search Boxes === */
+    .barcode-search-container,
     .search-container {
         display: flex;
         align-items: center;
@@ -416,30 +352,25 @@
         border: 1px solid #e8e8e8;
     }
 
-    .search-container label {
-        font-size: 13px;
-        color: #555;
-        padding-left: 8px;
-    }
-
+    .barcode-search-container input,
     .search-container input {
         border: none !important;
         background: transparent !important;
         padding: 8px 10px !important;
         height: 36px !important;
+        font-size: 13px !important;
+        outline: none !important;
+    }
+
+    .barcode-search-container input {
         width: 180px !important;
+        font-family: monospace !important;
     }
 
-    .search-container input:focus {
-        box-shadow: none !important;
-        border: none !important;
+    .search-container input {
+        width: 250px !important;
     }
 
-    .search-container input::placeholder {
-        color: #aaa;
-    }
-
-    /* Active filter tags */
     .active-filters {
         display: flex;
         flex-wrap: wrap;
@@ -470,7 +401,6 @@
         cursor: pointer;
         font-weight: 700;
         color: #666;
-        transition: color 0.2s;
     }
 
     .active-filters .filter-tag .remove-tag:hover {
@@ -486,11 +416,8 @@
     /* === INVENTORY TABLE === */
     .table-responsive {
         overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin-bottom: 1rem;
         border-radius: 12px;
         background: white;
-        padding: 0;
         border: 1px solid #f0f0f0;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
@@ -523,21 +450,15 @@
         border-bottom: 1px solid #f5f5f5;
     }
 
-    #inventoryTable tbody tr {
-        transition: background 0.2s ease;
-    }
-
     #inventoryTable tbody tr:hover {
         background-color: #f8fdf8 !important;
-        box-shadow: inset 0 0 0 1px #c8e6c9;
     }
 
     #inventoryTable tbody tr:nth-child(even) {
         background-color: #fafffa;
     }
 
-    /* ACTION BUTTONS - ICON ONLY */
-    @if(auth()->user()->hasRole('Cashier'))
+    @if($isCashier)
     #inventoryTable th:last-child,
     #inventoryTable td:last-child {
         display: none !important;
@@ -562,7 +483,6 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        text-decoration: none;
     }
 
     .edit-icon {
@@ -574,7 +494,6 @@
         background: #1a73e8;
         color: white;
         transform: scale(1.1);
-        box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
     }
 
     .delete-icon {
@@ -586,10 +505,8 @@
         background: #d32f2f;
         color: white;
         transform: scale(1.1);
-        box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
     }
 
-    /* STATUS BADGES */
     .status-badge {
         font-size: clamp(10px, 1.2vw, 12px);
         padding: 5px 14px;
@@ -598,8 +515,6 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        white-space: nowrap;
-        letter-spacing: 0.3px;
         border: 1px solid transparent;
     }
 
@@ -608,51 +523,19 @@
         height: 8px;
         border-radius: 50%;
         display: inline-block;
-        animation: pulse 2s infinite;
     }
 
-    @keyframes pulse {
-        0% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.6; transform: scale(0.8); }
-        100% { opacity: 1; transform: scale(1); }
-    }
-
-    .status-available { 
-        background: #e8f5e9; 
-        color: #2e7d32; 
-        border-color: #a5d6a7;
-    }
+    .status-available { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
     .status-available .status-dot { background: #4caf50; }
-
-    .status-lowstock { 
-        background: #fff3e0; 
-        color: #e65100; 
-        border-color: #ffcc80;
-    }
+    .status-lowstock { background: #fff3e0; color: #e65100; border-color: #ffcc80; }
     .status-lowstock .status-dot { background: #ff9800; }
-
-    .status-expired { 
-        background: #ffebee; 
-        color: #c62828; 
-        border-color: #ef9a9a;
-    }
+    .status-expired { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
     .status-expired .status-dot { background: #f44336; }
-
-    .status-nearexpired { 
-        background: #fff8e1; 
-        color: #f57f17; 
-        border-color: #ffe082;
-    }
+    .status-nearexpired { background: #fff8e1; color: #f57f17; border-color: #ffe082; }
     .status-nearexpired .status-dot { background: #ffc107; }
-
-    .status-nearexpired-lowstock { 
-        background: #ffe0b2; 
-        color: #e65100; 
-        border-color: #ffab91;
-    }
+    .status-nearexpired-lowstock { background: #ffe0b2; color: #e65100; border-color: #ffab91; }
     .status-nearexpired-lowstock .status-dot { background: #ff6f00; }
 
-    /* Form Badges */
     .form-badge, .type-badge {
         display: inline-flex;
         align-items: center;
@@ -661,65 +544,106 @@
         border-radius: 16px;
         font-size: 11px;
         font-weight: 600;
-        letter-spacing: 0.3px;
         border: 1px solid transparent;
     }
 
-    .badge-tablet { 
-        background: #e3f2fd; 
-        color: #0d47a1; 
-        border-color: #90caf9;
-    }
-    .badge-tablet::before { content: '💊'; font-size: 12px; }
+    .badge-tablet { background: #e3f2fd; color: #0d47a1; border-color: #90caf9; }
+    .badge-capsule { background: #f3e5f5; color: #4a148c; border-color: #ce93d8; }
+    .badge-syrup { background: #e0f7fa; color: #00695c; border-color: #80deea; }
+    .badge-drops { background: #e8eaf6; color: #283593; border-color: #9fa8da; }
+    .badge-ointment { background: #fce4ec; color: #880e4f; border-color: #f48fb1; }
+    .badge-injection { background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; }
+    .badge-generic { background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; }
+    .badge-branded { background: #e3f2fd; color: #0d47a1; border-color: #90caf9; }
 
-    .badge-capsule { 
-        background: #f3e5f5; 
-        color: #4a148c; 
-        border-color: #ce93d8;
+    .classification-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        background: #e8f5e9;
+        color: #2e7d32;
     }
-    .badge-capsule::before { content: '💊'; font-size: 12px; }
+    .classification-badge.otc { background: #e8f5e9; color: #2e7d32; }
+    .classification-badge.prescription { background: #fff3e0; color: #e65100; }
+    .classification-badge.dangerous { background: #ffebee; color: #c62828; }
 
-    .badge-syrup { 
-        background: #e0f7fa; 
-        color: #00695c; 
-        border-color: #80deea;
+    /* === PAGINATION === */
+    .pagination-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: #fafbfc;
+        border-top: 1px solid #e9ecef;
+        flex-wrap: wrap;
+        gap: 10px;
+        border-radius: 0 0 12px 12px;
     }
-    .badge-syrup::before { content: '🧪'; font-size: 12px; }
 
-    .badge-drops { 
-        background: #e8eaf6; 
-        color: #283593; 
-        border-color: #9fa8da;
+    .pagination-info {
+        font-size: 13px;
+        color: #6c757d;
+        font-weight: 500;
     }
-    .badge-drops::before { content: '💧'; font-size: 12px; }
 
-    .badge-ointment { 
-        background: #fce4ec; 
-        color: #880e4f; 
-        border-color: #f48fb1;
+    .pagination-info strong {
+        color: #1b5e20;
+        font-weight: 700;
     }
-    .badge-ointment::before { content: '🧴'; font-size: 12px; }
 
-    .badge-injection { 
-        background: #e8f5e9; 
-        color: #1b5e20; 
-        border-color: #a5d6a7;
+    .pagination-links {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        flex-wrap: wrap;
     }
-    .badge-injection::before { content: '💉'; font-size: 12px; }
 
-    .badge-generic { 
-        background: #e8f5e9; 
-        color: #1b5e20; 
-        border-color: #a5d6a7;
+    .pagination-links a,
+    .pagination-links span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #495057;
+        background: white;
+        text-decoration: none;
+        transition: all 0.2s ease;
     }
-    .badge-generic::before { content: '🟢'; font-size: 10px; }
 
-    .badge-branded { 
-        background: #e3f2fd; 
-        color: #0d47a1; 
-        border-color: #90caf9;
+    .pagination-links a:hover {
+        background: #e8f5e9;
+        border-color: #1b5e20;
+        color: #1b5e20;
+        transform: translateY(-1px);
     }
-    .badge-branded::before { content: '🔵'; font-size: 10px; }
+
+    .pagination-links .active {
+        background: #1b5e20;
+        border-color: #1b5e20;
+        color: white;
+    }
+
+    .pagination-links .disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .pagination-links .dots {
+        border: none;
+        background: transparent;
+        color: #999;
+        min-width: 20px;
+        padding: 0 4px;
+    }
 
     /* QUEUE TABLE */
     .queue-section {
@@ -774,22 +698,12 @@
         font-weight: 600;
         font-size: 12px;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
     }
 
     .queue-table td {
         padding: 10px 8px;
         text-align: center;
         border-bottom: 1px solid #f0f0f0;
-        vertical-align: middle;
-    }
-
-    .queue-table tbody tr:hover {
-        background-color: #f8fdf8;
-    }
-
-    .queue-table tbody tr:nth-child(even) {
-        background-color: #fafffa;
     }
 
     .queue-transfer-btn {
@@ -801,13 +715,10 @@
         cursor: pointer;
         font-size: 11px;
         font-weight: 600;
-        transition: all 0.3s ease;
     }
 
     .queue-transfer-btn:hover {
         background: #2e7d32;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(27, 94, 32, 0.3);
     }
 
     .queue-remove-btn {
@@ -820,18 +731,13 @@
         font-size: 11px;
         font-weight: 600;
         margin-left: 5px;
-        transition: all 0.3s ease;
     }
 
     .queue-remove-btn:hover {
         background: #b71c1c;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
     }
 
-    /* ============================================================ */
-    /* === MODAL - OVERLAY WITH BLUR BACKGROUND === */
-    /* ============================================================ */
+    /* === MODAL === */
     .modal {
         display: none;
         position: fixed;
@@ -842,17 +748,12 @@
         height: 100%;
         background-color: rgba(0, 0, 0, 0.5);
         backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
         animation: modalFadeIn 0.3s ease;
     }
 
     @keyframes modalFadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
 
     .modal-content {
@@ -873,14 +774,8 @@
     }
 
     @keyframes modalSlideIn {
-        from {
-            opacity: 0;
-            transform: translate(-50%, -60%);
-        }
-        to {
-            opacity: 1;
-            transform: translate(-50%, -50%);
-        }
+        from { opacity: 0; transform: translate(-50%, -60%); }
+        to { opacity: 1; transform: translate(-50%, -50%); }
     }
 
     .modal-content .close-modal {
@@ -893,7 +788,6 @@
         border: none;
         color: #999;
         transition: all 0.3s ease;
-        line-height: 1;
     }
 
     .modal-content .close-modal:hover {
@@ -910,7 +804,6 @@
         padding-left: 15px;
     }
 
-    /* === FORM STYLES === */
     .form-group {
         margin-bottom: 10px;
     }
@@ -945,7 +838,6 @@
         border-radius: 6px;
         border: 2px solid #e9ecef;
         font-size: 13px;
-        transition: all 0.3s ease;
         background: white;
         height: 38px;
         box-sizing: border-box;
@@ -956,14 +848,6 @@
         border-color: #1b5e20;
         outline: none;
         box-shadow: 0 0 0 3px rgba(27, 94, 32, 0.08);
-    }
-
-    .form-group input[readonly] {
-        background: #f8f9fa;
-        cursor: not-allowed;
-        border-color: #dee2e6;
-        font-weight: 600;
-        color: #1b5e20;
     }
 
     .form-row {
@@ -978,38 +862,12 @@
         gap: 10px;
     }
 
-    .unit-display {
-        background: #f8f9fa;
-        padding: 6px 12px;
-        border-radius: 6px;
-        border: 2px solid #e9ecef;
-        min-height: 36px;
-        display: flex;
-        align-items: center;
-        font-size: 13px;
-    }
-
-    .unit-display .unit-value {
-        font-weight: 700;
-        color: #1b5e20;
-        margin-left: 4px;
-    }
-
-    .unit-display .no-unit {
-        color: #999;
-        font-style: italic;
-    }
-
     .barcode-box {
         background: #f8f9fa;
         padding: 12px 14px;
         border-radius: 8px;
         margin-bottom: 10px;
         border: 1px solid #e9ecef;
-    }
-
-    .barcode-box .form-group {
-        margin-bottom: 0;
     }
 
     .barcode-wrapper {
@@ -1032,9 +890,6 @@
         padding: 0 16px;
         border-radius: 6px;
         cursor: pointer;
-        font-weight: 500;
-        transition: all 0.3s;
-        white-space: nowrap;
         font-size: 12px;
         height: 36px;
     }
@@ -1061,21 +916,26 @@
         background: white;
     }
 
-    .barcode-preview {
-        text-align: center;
-        padding: 10px;
-        background: white;
+    .unit-display {
+        background: #f8f9fa;
+        padding: 6px 12px;
         border-radius: 6px;
-        border: 1px solid #e9ecef;
-        margin-top: 8px;
+        border: 2px solid #e9ecef;
+        min-height: 36px;
+        display: flex;
+        align-items: center;
+        font-size: 13px;
     }
 
-    .barcode-preview img {
-        height: 50px;
-        border: 1px solid #ddd;
-        padding: 5px;
-        border-radius: 4px;
-        background: white;
+    .unit-display .unit-value {
+        font-weight: 700;
+        color: #1b5e20;
+        margin-left: 4px;
+    }
+
+    .unit-display .no-unit {
+        color: #999;
+        font-style: italic;
     }
 
     .stock-info-box {
@@ -1098,9 +958,6 @@
         border: 2px solid #1b5e20 !important;
         font-weight: 700;
         color: #1b5e20 !important;
-        font-size: 13px !important;
-        height: 38px !important;
-        padding: 6px 10px !important;
     }
 
     .form-buttons {
@@ -1121,18 +978,11 @@
         cursor: pointer;
         font-weight: 600;
         font-size: 14px;
-        transition: all 0.3s ease;
     }
 
     .confirm-btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 15px rgba(27, 94, 32, 0.3);
-    }
-
-    .confirm-btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        transform: none;
     }
 
     .cancel-btn {
@@ -1144,41 +994,21 @@
         cursor: pointer;
         font-weight: 600;
         font-size: 14px;
-        transition: all 0.3s ease;
     }
 
     .cancel-btn:hover {
         background: #5a6268;
-        transform: translateY(-2px);
     }
 
-    /* Mobile Responsive */
     @media (max-width: 768px) {
         .modal-content {
             padding: 20px;
             width: 98%;
-            max-height: 95vh;
         }
 
         .form-row,
         .form-row-3 {
             grid-template-columns: 1fr;
-        }
-
-        .barcode-wrapper {
-            flex-direction: column;
-        }
-
-        .barcode-wrapper .btn-generate {
-            width: 100%;
-        }
-
-        .form-buttons {
-            flex-direction: column;
-        }
-
-        .form-buttons button {
-            width: 100%;
         }
 
         .toolbar {
@@ -1191,26 +1021,29 @@
             align-items: stretch;
         }
 
-        .toolbar-right {
-            justify-content: center;
-        }
-
-        .filter-container {
-            flex-wrap: wrap;
-        }
-
         .search-container input,
         .barcode-search-container input {
             width: 100% !important;
         }
+
+        .pagination-wrapper {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .pagination-links {
+            justify-content: center;
+        }
+
+        .submenu {
+            left: 0;
+            top: 100%;
+            max-width: 100%;
+        }
     }
 
-    .swal2-container {
-        z-index: 999999 !important;
-    }
-    .swal2-popup {
-        z-index: 999999 !important;
-    }
+    .swal2-container { z-index: 999999 !important; }
+    .swal2-popup { z-index: 999999 !important; }
 </style>
 
 <!-- Header -->
@@ -1219,11 +1052,11 @@
 </div>
 
 <!-- TABS -->
-@if(!auth()->user()->hasRole('Cashier'))
+@if(!$isCashier)
 <div class="inventory-tabs">
     <a href="{{ route('inventory.index', ['tab' => 'old-stock']) }}" class="tab {{ $tab == 'old-stock' ? 'active' : '' }}">
         <i class="fa-solid fa-boxes-stacked"></i> Old Stock
-        <span class="badge-count">{{ $products->sum(fn($p) => $p->batches->count()) }}</span>
+        <span class="badge-count">{{ $products->total() ?? 0 }}</span>
     </a>
     <a href="{{ route('inventory.index', ['tab' => 'new-stock']) }}" class="tab {{ $tab == 'new-stock' ? 'active' : '' }}">
         <i class="fa-solid fa-clock"></i> New Stock Queue 
@@ -1236,10 +1069,9 @@
 @if($tab == 'old-stock')
 
 <!-- Toolbar -->
-@if(!auth()->user()->hasRole('Cashier'))
+@if(!$isCashier)
 <div class="toolbar">
     <div class="toolbar-left">
-        <!-- Filter Container -->
         <div class="filter-container">
             <label><i class="fa-solid fa-filter"></i></label>
             <div class="filter-dropdown" id="filterDropdown">
@@ -1253,15 +1085,14 @@
                 <div class="filter-option has-submenu" data-filter="type">
                     <span><span class="option-icon">🏷️</span> Type</span>
                     <span class="submenu-arrow">▶</span>
-                    <div class="submenu">
-                        <div class="filter-option" data-value="all" data-subfilter="type">
-                            <span>📋 All Types</span>
+                    <div class="submenu" data-submenu="type">
+                        <div class="submenu-search">
+                            <input type="text" class="submenu-search-input" placeholder="Search type..." data-target="type">
                         </div>
-                        <div class="filter-option" data-value="Generic" data-subfilter="type">
-                            <span>🟢 Generic</span>
-                        </div>
-                        <div class="filter-option" data-value="Branded" data-subfilter="type">
-                            <span>🔵 Branded</span>
+                        <div class="submenu-list" data-list="type">
+                            <div class="filter-option" data-value="all" data-subfilter="type"><span>📋 All Types</span></div>
+                            <div class="filter-option" data-value="Generic" data-subfilter="type"><span>🟢 Generic</span></div>
+                            <div class="filter-option" data-value="Branded" data-subfilter="type"><span>🔵 Branded</span></div>
                         </div>
                     </div>
                 </div>
@@ -1270,15 +1101,33 @@
                 <div class="filter-option has-submenu" data-filter="form">
                     <span><span class="option-icon">💊</span> Form</span>
                     <span class="submenu-arrow">▶</span>
-                    <div class="submenu">
-                        <div class="filter-option" data-value="all" data-subfilter="form">
-                            <span>📋 All Forms</span>
+                    <div class="submenu" data-submenu="form">
+                        <div class="submenu-search">
+                            <input type="text" class="submenu-search-input" placeholder="Search form..." data-target="form">
                         </div>
-                        @foreach($dosageForms as $form)
-                        <div class="filter-option" data-value="{{ $form->name }}" data-subfilter="form">
-                            <span>💊 {{ $form->name }}</span>
+                        <div class="submenu-list" data-list="form">
+                            <div class="filter-option" data-value="all" data-subfilter="form"><span>📋 All Forms</span></div>
+                            @foreach($dosageForms as $form)
+                            <div class="filter-option" data-value="{{ $form->name }}" data-subfilter="form"><span>💊 {{ $form->name }}</span></div>
+                            @endforeach
                         </div>
-                        @endforeach
+                    </div>
+                </div>
+                
+                <!-- Drug Classification -->
+                <div class="filter-option has-submenu" data-filter="drug_classification">
+                    <span><span class="option-icon">📋</span> Drug Classification</span>
+                    <span class="submenu-arrow">▶</span>
+                    <div class="submenu" data-submenu="drug_classification">
+                        <div class="submenu-search">
+                            <input type="text" class="submenu-search-input" placeholder="Search classification..." data-target="drug_classification">
+                        </div>
+                        <div class="submenu-list" data-list="drug_classification">
+                            <div class="filter-option" data-value="all" data-subfilter="drug_classification"><span>📋 All Classifications</span></div>
+                            @foreach($drugClassifications as $classification)
+                            <div class="filter-option" data-value="{{ $classification->name }}" data-subfilter="drug_classification"><span>📋 {{ $classification->name }}</span></div>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
                 
@@ -1286,21 +1135,16 @@
                 <div class="filter-option has-submenu" data-filter="status">
                     <span><span class="option-icon">📊</span> Status</span>
                     <span class="submenu-arrow">▶</span>
-                    <div class="submenu">
-                        <div class="filter-option" data-value="all" data-subfilter="status">
-                            <span>📋 All Status</span>
+                    <div class="submenu" data-submenu="status">
+                        <div class="submenu-search">
+                            <input type="text" class="submenu-search-input" placeholder="Search status..." data-target="status">
                         </div>
-                        <div class="filter-option" data-value="available" data-subfilter="status">
-                            <span>🟢 Available</span>
-                        </div>
-                        <div class="filter-option" data-value="lowstock" data-subfilter="status">
-                            <span>🟠 Low Stock</span>
-                        </div>
-                        <div class="filter-option" data-value="nearexpired" data-subfilter="status">
-                            <span>🟡 Near Expired</span>
-                        </div>
-                        <div class="filter-option" data-value="expired" data-subfilter="status">
-                            <span>🔴 Expired</span>
+                        <div class="submenu-list" data-list="status">
+                            <div class="filter-option" data-value="all" data-subfilter="status"><span>📋 All Status</span></div>
+                            <div class="filter-option" data-value="available" data-subfilter="status"><span>🟢 Available</span></div>
+                            <div class="filter-option" data-value="lowstock" data-subfilter="status"><span>🟠 Low Stock</span></div>
+                            <div class="filter-option" data-value="nearexpired" data-subfilter="status"><span>🟡 Near Expired</span></div>
+                            <div class="filter-option" data-value="expired" data-subfilter="status"><span>🔴 Expired</span></div>
                         </div>
                     </div>
                 </div>
@@ -1309,35 +1153,33 @@
                 <div class="filter-option has-submenu" data-filter="category">
                     <span><span class="option-icon">📂</span> Category</span>
                     <span class="submenu-arrow">▶</span>
-                    <div class="submenu">
-                        <div class="filter-option" data-value="all" data-subfilter="category">
-                            <span>📋 All Categories</span>
+                    <div class="submenu" data-submenu="category">
+                        <div class="submenu-search">
+                            <input type="text" class="submenu-search-input" placeholder="Search category..." data-target="category">
                         </div>
-                        @foreach($categories as $category)
-                        <div class="filter-option" data-value="{{ $category->name }}" data-subfilter="category">
-                            <span>📁 {{ $category->name }}</span>
+                        <div class="submenu-list" data-list="category">
+                            <div class="filter-option" data-value="all" data-subfilter="category"><span>📋 All Categories</span></div>
+                            @foreach($categories as $category)
+                            <div class="filter-option" data-value="{{ $category->name }}" data-subfilter="category"><span>📁 {{ $category->name }}</span></div>
+                            @endforeach
                         </div>
-                        @endforeach
                     </div>
                 </div>
             </div>
             
-            <!-- Reset Filter Button -->
             <button class="filter-reset-btn" id="resetFilters">
                 <i class="fa-solid fa-rotate-right"></i> Reset
             </button>
         </div>
         
-        <!-- Barcode Search -->
         <div class="barcode-search-container">
             <label>🔍</label>
             <input type="text" id="barcodeSearch" placeholder="Scan barcode...">
         </div>
         
-        <!-- Search Box -->
         <div class="search-container">
             <label><i class="fa-solid fa-search"></i></label>
-            <input type="text" id="searchBox" placeholder="Search product...">
+            <input type="text" id="searchBox" placeholder="Search product name..." autofocus>
         </div>
     </div>
     
@@ -1348,7 +1190,6 @@
     </div>
 </div>
 
-<!-- Active Filters Display -->
 <div class="active-filters" id="activeFiltersDisplay">
     <span class="no-filters">No active filters</span>
 </div>
@@ -1358,7 +1199,7 @@
     <div class="toolbar-left">
         <div class="search-container">
             <label><i class="fa-solid fa-search"></i></label>
-            <input type="text" id="searchBox" placeholder="Search product...">
+            <input type="text" id="searchBox" placeholder="Search product name...">
         </div>
     </div>
 </div>
@@ -1377,6 +1218,7 @@
                 <th>Form</th>
                 <th>Type</th>
                 <th>Category</th>
+                <th>Drug Classification</th>
                 <th>Price</th>
                 <th>Batch No.</th>
                 <th>Total Boxes</th>
@@ -1386,93 +1228,204 @@
                 <th>Expiry Date</th>
                 <th>Arrival Date</th>
                 <th>Status</th>
-                @if(!auth()->user()->hasRole('Cashier'))
+                @if(!$isCashier)
                 <th>Actions</th>
                 @endif
             </tr>
         </thead>
         <tbody>
-            @forelse($products as $product)
-                @foreach($product->batches as $batchIndex => $batch)
-                @php
-                    $statusClass = $batch->status;
-                    $statusText = $batch->status_text;
-                    $form = $product->form ?? '';
-                    $type = $product->type ?? '';
-                @endphp
-                <tr id="batch-{{ $batch->id }}" class="batch-row" data-product-id="{{ $product->id }}">
-                    <td>{{ $product->id }}</td>
-                    <td>
-                        @if($product->barcode)
-                            <span style="font-family: monospace; font-size: 11px; background: #f5f5f5; padding: 2px 8px; border-radius: 4px;">{{ $product->barcode }}</span>
-                        @else
-                            <span style="color: #ccc;">—</span>
-                        @endif
-                    </td>
-                    <td>{{ $product->name }}</td>
-                    <td>{{ $product->brand ?? '-' }}</td>
-                    <td>{{ $product->dosage_amount }} {{ $product->dosage_unit }}</td>
-                    <td>
-                        @if($form == 'Tablet') <span class="form-badge badge-tablet">Tablet</span>
-                        @elseif($form == 'Capsule') <span class="form-badge badge-capsule">Capsule</span>
-                        @elseif($form == 'Syrup') <span class="form-badge badge-syrup">Syrup</span>
-                        @elseif($form == 'Drops') <span class="form-badge badge-drops">Drops</span>
-                        @elseif($form == 'Ointment') <span class="form-badge badge-ointment">Ointment</span>
-                        @elseif($form == 'Injection') <span class="form-badge badge-injection">Injection</span>
-                        @else {{ $form }} @endif
-                    </td>
-                    <td>
-                        @if($type == 'Generic') <span class="type-badge badge-generic">Generic</span>
-                        @elseif($type == 'Branded') <span class="type-badge badge-branded">Branded</span>
-                        @else {{ $type }} @endif
-                    </td>
-                    <td>{{ $product->category ?? '-' }}</td>
-                    <td>₱{{ number_format($product->price, 2) }}</td>
-                    <td>Batch {{ $batchIndex + 1 }}</td>
-                    <td>{{ $batch->quantity }}</td>
-                    <td>{{ $batch->pieces_per_box }}</td>
-                    <td>{{ $batch->total_pieces }}</td>
-                    <td>{{ $batch->pieces_left }}</td>
-                    <td>{{ \Carbon\Carbon::parse($batch->expiry_date)->format('Y-m-d') }}</td>
-                    <td>{{ \Carbon\Carbon::parse($batch->arrival_date)->format('Y-m-d') }}</td>
-                    <td>
-                        <span class="status-badge status-{{ $statusClass }}">
-                            <span class="status-dot"></span>
-                            {{ $statusText }}
-                        </span>
-                    </td>
-                    @if(!auth()->user()->hasRole('Cashier'))
-                    <td class="action-buttons">
-                        <!-- ✅ EDIT BUTTON - MODAL (with data attributes) -->
-                        <button class="action-btn-icon edit-icon" 
-                                data-product-id="{{ $product->id }}" 
-                                data-batch-id="{{ $batch->id }}"
-                                title="Edit">
-                            <i class="fa-solid fa-pencil"></i>
-                        </button>
-                        <button class="action-btn-icon delete-icon" data-batch-id="{{ $batch->id }}" title="Delete">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </td>
+            @php $hasProducts = $products->isNotEmpty(); @endphp
+
+            @if($hasProducts)
+                @foreach($products as $product)
+                    @php $hasBatch = $product->batches->isNotEmpty(); @endphp
+                    
+                    @if($hasBatch)
+                        @foreach($product->batches as $batchIndex => $batch)
+                        @php
+                            $statusClass = $batch->status;
+                            $statusText = $batch->status_text;
+                            $form = $product->form ?? '';
+                            $type = $product->type ?? '';
+                            $drugClass = $product->drugClassification->name ?? 'N/A';
+                            $drugClassType = $product->drugClassification->type ?? '';
+                        @endphp
+                        <tr id="batch-{{ $batch->id }}" class="batch-row" data-product-id="{{ $product->id }}">
+                            @php
+                                $globalIndex = $loop->parent->iteration + ($products->currentPage() - 1) * $products->perPage();
+                            @endphp
+                            <td>{{ $globalIndex }}</td>
+                            <td>
+                                @if($product->barcode)
+                                    <span style="font-family: monospace; font-size: 11px; background: #f5f5f5; padding: 2px 8px; border-radius: 4px;">{{ $product->barcode }}</span>
+                                @else
+                                    <span style="color: #ccc;">—</span>
+                                @endif
+                            </td>
+                            <td class="product-name-cell">{{ $product->name }}</td>
+                            <td>{{ $product->brand ?? '-' }}</td>
+                            <td>{{ $product->dosage_amount }} {{ $product->dosage_unit }}</td>
+                            <td>
+                                @if($form == 'Tablet') <span class="form-badge badge-tablet">Tablet</span>
+                                @elseif($form == 'Capsule') <span class="form-badge badge-capsule">Capsule</span>
+                                @elseif($form == 'Syrup') <span class="form-badge badge-syrup">Syrup</span>
+                                @elseif($form == 'Drops') <span class="form-badge badge-drops">Drops</span>
+                                @elseif($form == 'Ointment') <span class="form-badge badge-ointment">Ointment</span>
+                                @elseif($form == 'Injection') <span class="form-badge badge-injection">Injection</span>
+                                @else {{ $form }} @endif
+                            </td>
+                            <td>
+                                @if($type == 'Generic') <span class="type-badge badge-generic">Generic</span>
+                                @elseif($type == 'Branded') <span class="type-badge badge-branded">Branded</span>
+                                @else {{ $type }} @endif
+                            </td>
+                            <td>{{ $product->category ?? '-' }}</td>
+                            <td>
+                                @if($drugClass != 'N/A')
+                                    <span class="classification-badge {{ strtolower($drugClassType) }}">{{ $drugClass }}</span>
+                                @else
+                                    <span class="text-muted" style="font-size: 11px;">—</span>
+                                @endif
+                            </td>
+                            <td>₱{{ number_format($product->price, 2) }}</td>
+                            <td>Batch {{ $batchIndex + 1 }}</td>
+                            <td>{{ $batch->quantity }}</td>
+                            <td>{{ $batch->pieces_per_box }}</td>
+                            <td>{{ $batch->total_pieces ?? ($batch->quantity * $batch->pieces_per_box) }}</td>
+                            <td>{{ $batch->pieces_left }}</td>
+                            <td>{{ \Carbon\Carbon::parse($batch->expiry_date)->format('Y-m-d') }}</td>
+                            <td>{{ \Carbon\Carbon::parse($batch->arrival_date)->format('Y-m-d') }}</td>
+                            <td>
+                                <span class="status-badge status-{{ $statusClass }}">
+                                    <span class="status-dot"></span>
+                                    {{ $statusText }}
+                                </span>
+                            </td>
+                            @if(!$isCashier)
+                            <td class="action-buttons">
+                                <button class="action-btn-icon edit-icon" 
+                                        data-product-id="{{ $product->id }}" 
+                                        data-batch-id="{{ $batch->id }}"
+                                        title="Edit">
+                                    <i class="fa-solid fa-pencil"></i>
+                                </button>
+                                <button class="action-btn-icon delete-icon" data-batch-id="{{ $batch->id }}" title="Delete">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                            @endif
+                        </tr>
+                        @endforeach
+                    @else
+                        <tr class="text-muted">
+                            <td>{{ $product->id }}</td>
+                            <td>
+                                @if($product->barcode)
+                                    <span style="font-family: monospace; font-size: 11px; background: #f5f5f5; padding: 2px 8px; border-radius: 4px;">{{ $product->barcode }}</span>
+                                @else
+                                    <span style="color: #ccc;">—</span>
+                                @endif
+                            </td>
+                            <td class="product-name-cell"><strong>{{ $product->name }}</strong></td>
+                            <td>{{ $product->brand ?? '-' }}</td>
+                            <td>{{ $product->dosage_amount }} {{ $product->dosage_unit }}</td>
+                            <td>{{ $product->form ?? '-' }}</td>
+                            <td>
+                                @if($product->type == 'Generic') <span class="type-badge badge-generic">Generic</span>
+                                @elseif($product->type == 'Branded') <span class="type-badge badge-branded">Branded</span>
+                                @else {{ $product->type ?? '-' }} @endif
+                            </td>
+                            <td>{{ $product->category ?? '-' }}</td>
+                            <td>
+                                @php $drugClass = $product->drugClassification->name ?? 'N/A'; @endphp
+                                @if($drugClass != 'N/A')
+                                    <span class="classification-badge">{{ $drugClass }}</span>
+                                @else
+                                    <span class="text-muted" style="font-size: 11px;">—</span>
+                                @endif
+                            </td>
+                            <td>₱{{ number_format($product->price, 2) }}</td>
+                            <td colspan="7" style="color: #999; font-style: italic;">No active batch</td>
+                            <td><span class="status-badge status-expired">Out of Stock</span></td>
+                            @if(!$isCashier)
+                            <td class="action-buttons">
+                                <button class="action-btn-icon edit-icon" 
+                                        data-product-id="{{ $product->id }}" 
+                                        data-batch-id=""
+                                        title="Edit">
+                                    <i class="fa-solid fa-pencil"></i>
+                                </button>
+                            </td>
+                            @endif
+                        </tr>
                     @endif
-                </tr>
                 @endforeach
-            @empty
+            @else
                 <tr>
-                    <td colspan="18" style="text-align: center; padding: 50px; color: #999;">
+                    <td colspan="{{ $isCashier ? 18 : 19 }}" style="text-align: center; padding: 50px; color: #999;">
                         <i class="fa-solid fa-box-open" style="font-size: 48px; display: block; margin-bottom: 15px; opacity: 0.3;"></i>
                         No products found. Start adding your inventory!
                     </td>
                 </tr>
-            @endforelse
+            @endif
         </tbody>
     </table>
 </div>
 
+@if($products->hasPages())
+<div class="pagination-wrapper">
+    <div class="pagination-info">
+        Showing <strong>{{ $products->firstItem() ?? 0 }}</strong> to <strong>{{ $products->lastItem() ?? 0 }}</strong> of <strong>{{ $products->total() }}</strong> results
+    </div>
+    <div class="pagination-links">
+        @if ($products->onFirstPage())
+            <span class="disabled">‹</span>
+        @else
+            <a href="{{ $products->previousPageUrl() }}">‹</a>
+        @endif
+
+        @php
+            $currentPage = $products->currentPage();
+            $lastPage = $products->lastPage();
+            $start = max(1, $currentPage - 2);
+            $end = min($lastPage, $currentPage + 2);
+        @endphp
+
+        @if($start > 1)
+            <a href="{{ $products->url(1) }}">1</a>
+            @if($start > 2)
+                <span class="dots">…</span>
+            @endif
+        @endif
+
+        @for($i = $start; $i <= $end; $i++)
+            @if($i == $currentPage)
+                <span class="active">{{ $i }}</span>
+            @else
+                <a href="{{ $products->url($i) }}">{{ $i }}</a>
+            @endif
+        @endfor
+
+        @if($end < $lastPage)
+            @if($end < $lastPage - 1)
+                <span class="dots">…</span>
+            @endif
+            <a href="{{ $products->url($lastPage) }}">{{ $lastPage }}</a>
+        @endif
+
+        @if ($products->hasMorePages())
+            <a href="{{ $products->nextPageUrl() }}">›</a>
+        @else
+            <span class="disabled">›</span>
+        @endif
+    </div>
+</div>
+@endif
+
 @endif
 
 <!-- ==================== NEW STOCK QUEUE TAB ==================== -->
-@if($tab == 'new-stock' && !auth()->user()->hasRole('Cashier'))
+@if($tab == 'new-stock' && !$isCashier)
 
 <div class="queue-section">
     <div class="queue-header">
@@ -1491,23 +1444,32 @@
             <table class="queue-table">
                 <thead>
                     <tr>
-                        <th>ID</th><th>Product</th><th>Brand</th><th>Dosage</th><th>Form</th>
-                        <th>Type</th><th>Category</th><th>Price</th><th>Qty (Box)</th>
-                        <th>Pcs/Box</th><th>Total Pcs</th><th>Expiry Date</th>
-                        <th>Arrival Date</th><th>Added By</th><th>Current Inventory</th><th>Actions</th>
+                        <th>ID</th>
+                        <th>Product</th>
+                        <th>Brand</th>
+                        <th>Dosage</th>
+                        <th>Form</th>
+                        <th>Type</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Qty (Box)</th>
+                        <th>Pcs/Box</th>
+                        <th>Total Pcs</th>
+                        <th>Expiry Date</th>
+                        <th>Arrival Date</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($queuedStocks as $stock)
                     @php
                         $currentProduct = $stock->product;
-                        $totalPiecesInInventory = $currentProduct ? $currentProduct->batches->sum('pieces_left') : 0;
                     @endphp
                     <tr>
                         <td>{{ $currentProduct ? $currentProduct->id : 'New' }}</td>
                         <td>{{ $stock->product_name ?? ($currentProduct ? $currentProduct->name : 'N/A') }}</td>
                         <td>{{ $stock->brand ?? ($currentProduct ? $currentProduct->brand : 'N/A') }}</td>
-                        <td>{{ $stock->dosage_amount }} {{ $stock->dosage_unit }}</td>
+                        <td>{{ $stock->dosage ?? ($currentProduct ? $currentProduct->dosage_amount . ' ' . $currentProduct->dosage_unit : '-') }}</td>
                         <td>
                             @php $form = $stock->form ?? ($currentProduct ? $currentProduct->form : ''); @endphp
                             @if($form == 'Tablet') <span class="form-badge badge-tablet">Tablet</span>
@@ -1528,16 +1490,9 @@
                         <td>₱{{ number_format($stock->price ?? ($currentProduct ? $currentProduct->price : 0), 2) }}</td>
                         <td>{{ $stock->quantity }}</td>
                         <td>{{ $stock->pieces_per_box }}</td>
-                        <td>{{ $stock->quantity * $stock->pieces_per_box }}</td>
+                        <td>{{ $stock->total_pieces ?? ($stock->quantity * $stock->pieces_per_box) }}</td>
                         <td>{{ $stock->expiry_date ? \Carbon\Carbon::parse($stock->expiry_date)->format('Y-m-d') : '-' }}</td>
                         <td>{{ \Carbon\Carbon::parse($stock->arrival_date)->format('Y-m-d') }}</td>
-                        <td>{{ $stock->addedByUser->username ?? 'N/A' }}</td>
-                        <td>
-                            <strong>{{ number_format($totalPiecesInInventory) }} pcs</strong>
-                            @if($totalPiecesInInventory <= 0 && $currentProduct)
-                                <span style="color: #e53935; font-size: 11px;"> (Empty!)</span>
-                            @endif
-                        </td>
                         <td>
                             <form action="{{ route('stock-queue.transfer', $stock->id) }}" method="POST" style="display: inline;">
                                 @csrf
@@ -1560,9 +1515,9 @@
 @endif
 
 <!-- ============================================================ -->
-<!-- === ADD/EDIT PRODUCT MODAL (WITH WORKING AUTO-DETECT) === -->
+<!-- === ADD/EDIT PRODUCT MODAL === -->
 <!-- ============================================================ -->
-@if(!auth()->user()->hasRole('Cashier'))
+@if(!$isCashier)
 <div id="productModal" class="modal">
     <div class="modal-content">
         <button class="close-modal" id="closeModalBtn">&times;</button>
@@ -1575,13 +1530,11 @@
             <input type="hidden" name="batch_id" id="batch_id">
             <input type="hidden" name="dosage_form_id" id="dosage_form_id">
             
-            <!-- ===== PRODUCT NAME ===== -->
             <div class="form-group">
                 <label>Product Name <span class="required">*</span></label>
                 <input type="text" name="name" id="name" required placeholder="Enter product name...">
             </div>
             
-            <!-- ===== BARCODE ===== -->
             <div class="barcode-box">
                 <div class="form-group">
                     <label>Barcode</label>
@@ -1598,13 +1551,11 @@
                 </div>
             </div>
             
-            <!-- ===== BRAND ===== -->
             <div class="form-group">
                 <label>Brand</label>
                 <input type="text" name="brand" id="brand" placeholder="e.g., Unilab">
             </div>
             
-            <!-- ===== DOSAGE ===== -->
             <div class="form-row">
                 <div class="form-group">
                     <label>Dosage Amount <span class="required">*</span></label>
@@ -1623,7 +1574,6 @@
                 </div>
             </div>
             
-            <!-- ===== FORM (with data-unit attribute) ===== -->
             <div class="form-group">
                 <label>Form <span class="required">*</span> <span class="badge-auto">Auto Unit</span></label>
                 <select name="form" id="form" required>
@@ -1639,7 +1589,6 @@
                 </select>
             </div>
             
-            <!-- ===== UNIT AUTO-DETECT ===== -->
             <div class="form-group" id="unitDisplayGroup" style="display: none;">
                 <div class="unit-display">
                     <i class="fas fa-check-circle" style="color: #1b5e20; font-size: 14px; margin-right: 6px;"></i>
@@ -1649,7 +1598,6 @@
                 </div>
             </div>
             
-            <!-- ===== TYPE & CATEGORY ===== -->
             <div class="form-row">
                 <div class="form-group">
                     <label>Type <span class="required">*</span></label>
@@ -1669,13 +1617,22 @@
                 </div>
             </div>
             
-            <!-- ===== PRICE ===== -->
+            <div class="form-group">
+                <label>Drug Classification</label>
+                <select name="drug_classification_id" id="drug_classification_id" class="form-select">
+                    <option value="">None</option>
+                    @foreach($drugClassifications as $classification)
+                        <option value="{{ $classification->id }}">{{ $classification->name }}</option>
+                    @endforeach
+                </select>
+                <small class="text-muted-small">Optional</small>
+            </div>
+            
             <div class="form-group">
                 <label>Price (₱) <span class="required">*</span></label>
                 <input type="number" name="price" id="price" step="0.01" required placeholder="0.00" min="0">
             </div>
             
-            <!-- ===== QUANTITY & PIECES PER BOX ===== -->
             <div class="form-row">
                 <div class="form-group">
                     <label>Qty (Boxes) <span class="required">*</span></label>
@@ -1687,7 +1644,6 @@
                 </div>
             </div>
             
-            <!-- ===== PIECES LEFT & TOTAL PIECES ===== -->
             <div class="form-row-3">
                 <div class="form-group">
                     <label>Pieces Left</label>
@@ -1705,7 +1661,6 @@
                 </div>
             </div>
             
-            <!-- ===== EXPIRY & ARRIVAL ===== -->
             <div class="form-row">
                 <div class="form-group">
                     <label>Expiry Date</label>
@@ -1718,7 +1673,6 @@
                 </div>
             </div>
             
-            <!-- ===== IMAGE ===== -->
             <div class="form-group">
                 <label>Product Image</label>
                 <input type="file" name="image" id="imageInput" accept="image/*" style="height: 36px; padding: 4px 10px;">
@@ -1726,7 +1680,6 @@
                 <small class="text-muted-small">Max 2MB. JPG, PNG.</small>
             </div>
             
-            <!-- ===== BUTTONS ===== -->
             <div class="form-buttons">
                 <button type="button" id="cancelModalBtn" class="cancel-btn">
                     <i class="fas fa-times"></i> Cancel
@@ -1747,19 +1700,17 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-// ============================================
-// ACTIVE FILTERS
-// ============================================
+const CSRF_TOKEN = '{{ csrf_token() }}';
+
+@if(!$isCashier)
 let activeFilters = {
     type: 'all',
     form: 'all',
     status: 'all',
-    category: 'all'
+    category: 'all',
+    drug_classification: 'all'
 };
 
-// ============================================
-// AUTO-CALCULATE PIECES
-// ============================================
 function calculatePieces() {
     let qty = parseInt($('#quantity').val()) || 0;
     let pcsPerBox = parseInt($('#pieces_per_box').val()) || 0;
@@ -1779,20 +1730,18 @@ function calculatePieces() {
     }
 }
 
-// ✅ I-attach ang event listeners - gamit ang $(document).on() para sa dynamic elements
 $(document).on('input', '#quantity, #pieces_per_box', function() {
     calculatePieces();
 });
 
-// ============================================
-// AUTO-DETECT UNIT FROM FORM
-// ============================================
-document.addEventListener('DOMContentLoaded', function() {
+$(document).ready(function() {
     const formSelect = document.getElementById('form');
     const unitSelect = document.getElementById('dosage_unit');
     const displayGroup = document.getElementById('unitDisplayGroup');
     const displayUnit = document.getElementById('displayUnit');
     const noUnitMsg = document.getElementById('noUnitMessage');
+
+    if (!formSelect) return;
 
     function autoDetectUnit() {
         const selectedOption = formSelect.options[formSelect.selectedIndex];
@@ -1828,17 +1777,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     formSelect.addEventListener('change', autoDetectUnit);
-
-    // Initial trigger if form has value
-    if (formSelect.value) {
-        autoDetectUnit();
-    }
+    if (formSelect.value) autoDetectUnit();
 });
 
-// ============================================
-// IMAGE PREVIEW
-// ============================================
-$('#imageInput').on('change', function(e) {
+$(document).on('change', '#imageInput', function(e) {
     let file = e.target.files[0];
     if (file) {
         let reader = new FileReader();
@@ -1849,9 +1791,6 @@ $('#imageInput').on('change', function(e) {
     }
 });
 
-// ============================================
-// FILTER FUNCTIONS
-// ============================================
 function updateFilterDisplay() {
     let displayText = 'All Products';
     let hasFilter = false;
@@ -1861,10 +1800,9 @@ function updateFilterDisplay() {
     if (activeFilters.form !== 'all') { hasFilter = true; parts.push(activeFilters.form); }
     if (activeFilters.status !== 'all') { hasFilter = true; parts.push(activeFilters.status); }
     if (activeFilters.category !== 'all') { hasFilter = true; parts.push(activeFilters.category); }
+    if (activeFilters.drug_classification !== 'all') { hasFilter = true; parts.push(activeFilters.drug_classification); }
     
-    if (hasFilter) {
-        displayText = 'Filtered: ' + parts.join(' • ');
-    }
+    if (hasFilter) displayText = 'Filtered: ' + parts.join(' • ');
     $('#filterDisplay').text(displayText);
     updateActiveFilterTags();
 }
@@ -1872,29 +1810,23 @@ function updateFilterDisplay() {
 function updateActiveFilterTags() {
     let container = $('#activeFiltersDisplay');
     container.empty();
-    
     let hasFilter = false;
     let filterMap = {
         type: { label: 'Type', value: activeFilters.type },
         form: { label: 'Form', value: activeFilters.form },
         status: { label: 'Status', value: activeFilters.status },
-        category: { label: 'Category', value: activeFilters.category }
+        category: { label: 'Category', value: activeFilters.category },
+        drug_classification: { label: 'Classification', value: activeFilters.drug_classification }
     };
     
     Object.keys(filterMap).forEach(function(key) {
         if (filterMap[key].value !== 'all') {
             hasFilter = true;
-            let tag = $(`<span class="filter-tag">
-                ${filterMap[key].label}: ${filterMap[key].value}
-                <span class="remove-tag" data-filter="${key}">×</span>
-            </span>`);
-            container.append(tag);
+            container.append(`<span class="filter-tag">${filterMap[key].label}: ${filterMap[key].value}<span class="remove-tag" data-filter="${key}">×</span></span>`);
         }
     });
     
-    if (!hasFilter) {
-        container.html('<span class="no-filters">No active filters</span>');
-    }
+    if (!hasFilter) container.html('<span class="no-filters">No active filters</span>');
 }
 
 $(document).on('click', '.remove-tag', function() {
@@ -1905,12 +1837,7 @@ $(document).on('click', '.remove-tag', function() {
 });
 
 $('#resetFilters').click(function() {
-    activeFilters = {
-        type: 'all',
-        form: 'all',
-        status: 'all',
-        category: 'all'
-    };
+    activeFilters = { type: 'all', form: 'all', status: 'all', category: 'all', drug_classification: 'all' };
     $('#filterDisplay').text('All Products');
     $('#filterMenu').removeClass('show');
     $('.submenu').removeClass('show');
@@ -1959,19 +1886,64 @@ $(document).click(function(e) {
     }
 });
 
+$(document).on('input', '.submenu-search-input', function() {
+    const searchTerm = $(this).val().toLowerCase().trim();
+    const target = $(this).data('target');
+    const list = $(`.submenu-list[data-list="${target}"]`);
+    
+    list.find('.filter-option').each(function() {
+        const text = $(this).text().toLowerCase();
+        if (searchTerm === '' || text.includes(searchTerm)) {
+            $(this).removeClass('hidden').show();
+        } else {
+            $(this).addClass('hidden').hide();
+        }
+    });
+    
+    const visibleCount = list.find('.filter-option:visible').length;
+    let noResultMsg = list.find('.no-results-msg');
+    
+    if (visibleCount === 0 && searchTerm !== '') {
+        if (noResultMsg.length === 0) {
+            list.append(`<div class="no-results-msg"><i class="fas fa-search"></i> No results found</div>`);
+        }
+    } else {
+        noResultMsg.remove();
+    }
+});
+
+$(document).on('mouseleave', '.submenu', function() {
+    $(this).find('.submenu-search-input').val('');
+    $(this).find('.filter-option').removeClass('hidden').show();
+    $(this).find('.no-results-msg').remove();
+});
+
 function applyFilters() {
+    const searchTerm = $('#searchBox').val().toLowerCase().trim();
+    
     $('#inventoryTable tbody tr').each(function() {
         let show = true;
         
-        let type = $(this).find('td:eq(6)').text().trim();
-        let form = $(this).find('td:eq(5) .form-badge').text().trim() || $(this).find('td:eq(5)').text().trim();
-        let statusElem = $(this).find('.status-badge');
-        let statusText = statusElem.text().trim().toLowerCase();
-        let category = $(this).find('td:eq(7)').text().trim();
-
-        if (activeFilters.type !== 'all' && !type.includes(activeFilters.type)) show = false;
-        if (activeFilters.form !== 'all' && !form.toLowerCase().includes(activeFilters.form.toLowerCase())) show = false;
-        if (activeFilters.status !== 'all') {
+        if ($(this).find('td').length === 1) return;
+        
+        if (searchTerm !== '') {
+            const productName = $(this).find('td:eq(2)').text().toLowerCase().trim();
+            if (!productName.includes(searchTerm)) show = false;
+        }
+        
+        if (show && activeFilters.type !== 'all') {
+            let type = $(this).find('td:eq(6)').text().trim();
+            if (!type.includes(activeFilters.type)) show = false;
+        }
+        
+        if (show && activeFilters.form !== 'all') {
+            let form = $(this).find('td:eq(5) .form-badge').text().trim() || $(this).find('td:eq(5)').text().trim();
+            if (!form.toLowerCase().includes(activeFilters.form.toLowerCase())) show = false;
+        }
+        
+        if (show && activeFilters.status !== 'all') {
+            let statusElem = $(this).find('.status-badge');
+            let statusText = statusElem.text().trim().toLowerCase();
             let statusMatch = false;
             if (activeFilters.status === 'available' && statusText === 'available') statusMatch = true;
             else if (activeFilters.status === 'lowstock' && statusText.includes('low')) statusMatch = true;
@@ -1979,21 +1951,33 @@ function applyFilters() {
             else if (activeFilters.status === 'expired' && statusText === 'expired') statusMatch = true;
             if (!statusMatch) show = false;
         }
-        if (activeFilters.category !== 'all' && category !== activeFilters.category) show = false;
         
-        let search = $('#searchBox').val().toLowerCase();
-        let name = $(this).find('td:eq(2)').text().toLowerCase();
-        if (search && !name.includes(search)) show = false;
+        if (show && activeFilters.category !== 'all') {
+            let category = $(this).find('td:eq(7)').text().trim();
+            if (category !== activeFilters.category) show = false;
+        }
+        
+        if (show && activeFilters.drug_classification !== 'all') {
+            let drugClass = $(this).find('td:eq(8)').text().trim();
+            let selectedClass = activeFilters.drug_classification;
+            if (!drugClass.includes(selectedClass)) show = false;
+        }
         
         $(this).toggle(show);
     });
 }
+@endif
 
-$('#searchBox').on('keyup', applyFilters);
+$(document).on('input', '#searchBox', function() {
+    const searchTerm = $(this).val().toLowerCase().trim();
+    $('#inventoryTable tbody tr').each(function() {
+        if ($(this).find('td').length === 1) return;
+        const productName = $(this).find('td:eq(2)').text().toLowerCase().trim();
+        $(this).toggle(productName.includes(searchTerm));
+    });
+});
 
-// ============================================
-// MODAL - OPEN / CLOSE (ADD & EDIT)
-// ============================================
+@if(!$isCashier)
 function openModal(title, action) {
     $('#modalTitle').text(title);
     $('#productForm').data('action', action);
@@ -2006,21 +1990,18 @@ function openModal(title, action) {
         $('#barcodePreview').hide();
         $('#previewImage').empty();
         
-        // Set default arrival date
         let today = new Date().toISOString().split('T')[0];
         $('#arrival_date').val(today);
         $('#quantity').val(1);
         $('#pieces_per_box').val(10);
     }
     
-    // Reset unit display
     $('#unitDisplayGroup').hide();
     $('#displayUnit').text('—').show();
     $('#noUnitMessage').hide();
     
     calculatePieces();
     
-    // Trigger auto-detect if form has value
     let formSelect = document.getElementById('form');
     if (formSelect && formSelect.value) {
         formSelect.dispatchEvent(new Event('change'));
@@ -2037,28 +2018,18 @@ function closeModal() {
     $('#previewImage').empty();
 }
 
-// Add Product Button
 $('#addProductBtn').on('click', function(e) {
     e.preventDefault();
     openModal('Add Product', 'add');
 });
 
-// Close Modal - X button
 $('#closeModalBtn').on('click', closeModal);
-
-// Close Modal - Cancel button
 $('#cancelModalBtn').on('click', closeModal);
 
-// Close Modal - Click outside
 $(window).on('click', function(e) {
-    if ($(e.target).is('#productModal')) {
-        closeModal();
-    }
+    if ($(e.target).is('#productModal')) closeModal();
 });
 
-// ============================================
-// EDIT BUTTON - LOAD DATA TO MODAL
-// ============================================
 $(document).on('click', '.edit-icon', function() {
     let productId = $(this).data('product-id');
     let batchId = $(this).data('batch-id');
@@ -2078,11 +2049,10 @@ $(document).on('click', '.edit-icon', function() {
                 let product = response.product;
                 let batch = response.batch;
                 
-                // Fill the modal form
                 $('#modalTitle').text('Edit Product');
                 $('#productForm').data('action', 'edit');
                 $('#productId').val(product.id);
-                $('#batch_id').val(batch.id);
+                $('#batch_id').val(batch ? batch.id : '');
                 $('#name').val(product.name);
                 $('#barcode').val(product.barcode || '');
                 $('#brand').val(product.brand || '');
@@ -2091,17 +2061,30 @@ $(document).on('click', '.edit-icon', function() {
                 $('#form').val(product.form || '');
                 $('#type').val(product.type || '');
                 $('#category').val(product.category || '');
+                $('#drug_classification_id').val(product.drug_classification_id || '');
                 $('#price').val(product.price || '');
-                $('#quantity').val(batch.quantity);
-                $('#pieces_per_box').val(batch.pieces_per_box);
-                $('#piecesLeft').val(batch.pieces_left);
-                $('#totalPieces').val(batch.total_pieces);
-                $('#stockInfo').text(batch.total_pieces.toLocaleString() + ' pcs');
                 
-                if (batch.expiry_date) $('#expiry_date').val(batch.expiry_date);
-                if (batch.arrival_date) $('#arrival_date').val(batch.arrival_date);
+                if (batch) {
+                    let qty = parseInt(batch.quantity) || 0;
+                    let pcsPerBox = parseInt(batch.pieces_per_box) || 0;
+                    let totalPieces = qty * pcsPerBox;
+                    
+                    $('#quantity').val(batch.quantity || 1);
+                    $('#pieces_per_box').val(batch.pieces_per_box || 1);
+                    $('#piecesLeft').val(batch.pieces_left !== undefined && batch.pieces_left !== null ? batch.pieces_left : totalPieces);
+                    $('#totalPieces').val(totalPieces.toLocaleString());
+                    $('#stockInfo').text(totalPieces.toLocaleString() + ' pcs');
+                    
+                    if (batch.expiry_date) $('#expiry_date').val(batch.expiry_date);
+                    if (batch.arrival_date) $('#arrival_date').val(batch.arrival_date);
+                } else {
+                    $('#quantity').val(1);
+                    $('#pieces_per_box').val(10);
+                    $('#piecesLeft').val(0);
+                    $('#totalPieces').val(0);
+                    $('#stockInfo').text('0 pcs');
+                }
                 
-                // Show barcode preview if exists
                 if (product.barcode) {
                     $('#previewImage').html(`<img src="/barcodes/image/${product.barcode}" style="height: 50px; border: 1px solid #ddd; padding: 5px; border-radius: 4px; background: white;">`);
                     $('#barcodePreview').show();
@@ -2110,14 +2093,12 @@ $(document).on('click', '.edit-icon', function() {
                     $('#previewImage').empty();
                 }
                 
-                // Show image preview if exists
                 if (product.image) {
                     $('#imagePreview').attr('src', '/storage/' + product.image).show();
                 } else {
                     $('#imagePreview').hide();
                 }
                 
-                // Trigger auto-detect after loading
                 setTimeout(function() {
                     let formSelect = document.getElementById('form');
                     if (formSelect && formSelect.value) {
@@ -2131,15 +2112,11 @@ $(document).on('click', '.edit-icon', function() {
         },
         error: function(xhr) { 
             Swal.close(); 
-            console.error('Error:', xhr);
             Swal.fire('Error', 'Failed to load product data', 'error'); 
         }
     });
 });
 
-// ============================================
-// DELETE BUTTON
-// ============================================
 $(document).on('click', '.delete-icon', function() {
     let batchId = $(this).data('batch-id');
     Swal.fire({
@@ -2153,7 +2130,7 @@ $(document).on('click', '.delete-icon', function() {
         if (result.isConfirmed) {
             fetch(`/inventory/${batchId}`, {
                 method: 'DELETE',
-                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                headers: { 'X-CSRF-TOKEN': CSRF_TOKEN }
             })
             .then(res => res.json())
             .then(data => {
@@ -2169,9 +2146,6 @@ $(document).on('click', '.delete-icon', function() {
     });
 });
 
-// ============================================
-// FORM SUBMISSION (ADD & EDIT)
-// ============================================
 let isSubmitting = false;
 
 $('#productForm').on('submit', function(e) {
@@ -2189,9 +2163,7 @@ $('#productForm').on('submit', function(e) {
     
     let url = action === 'edit' ? `/inventory/${$('#productId').val()}` : '/inventory';
     
-    if (action === 'edit') {
-        formData.append('_method', 'PUT');
-    }
+    if (action === 'edit') formData.append('_method', 'PUT');
     
     $.ajax({
         url: url,
@@ -2199,11 +2171,17 @@ $('#productForm').on('submit', function(e) {
         data: formData,
         processData: false,
         contentType: false,
-        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+        headers: { 'X-CSRF-TOKEN': CSRF_TOKEN },
+        timeout: 30000,
         success: function(response) {
             if (response.status === 'success') {
-                Swal.fire({ icon: 'success', title: 'Success!', text: response.message, timer: 1500, showConfirmButton: false })
-                .then(() => { location.reload(); });
+                Swal.fire({ 
+                    icon: 'success', 
+                    title: 'Success!', 
+                    text: response.message, 
+                    timer: 1500, 
+                    showConfirmButton: false 
+                }).then(() => { location.reload(); });
             } else {
                 Swal.fire('Error', response.message || 'Operation failed', 'error');
                 isSubmitting = false;
@@ -2225,14 +2203,54 @@ $('#productForm').on('submit', function(e) {
     });
 });
 
-// ============================================
-// BARCODE SEARCH
-// ============================================
+$('#generateBarcodeBtn').on('click', function() {
+    let btn = $(this);
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+    
+    $.ajax({
+        url: '/barcodes/generate',
+        method: 'POST',
+        headers: { 
+            'X-CSRF-TOKEN': CSRF_TOKEN,
+            'Content-Type': 'application/json'
+        },
+        success: function(data) {
+            if (data.barcode) {
+                $('#barcode').val(data.barcode);
+                $('#previewImage').html(`<img src="/barcodes/image/${data.barcode}" style="height: 50px; border: 1px solid #ddd; padding: 5px; border-radius: 4px; background: white;">`);
+                $('#barcodePreview').show();
+                Swal.fire({ 
+                    icon: 'success', 
+                    title: 'Barcode Generated!', 
+                    text: data.barcode, 
+                    timer: 1500, 
+                    showConfirmButton: false 
+                });
+            }
+        },
+        error: function() {
+            Swal.fire({ 
+                icon: 'error', 
+                title: 'Generation Failed', 
+                text: 'Could not generate barcode.' 
+            });
+        },
+        complete: function() {
+            btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Generate');
+        }
+    });
+});
+
 $('#barcodeSearch').on('keypress', function(e) {
     if (e.key === 'Enter') {
         const barcode = $(this).val().trim();
         if (barcode) {
-            Swal.fire({ title: 'Searching...', text: `Looking for barcode: ${barcode}`, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({ 
+                title: 'Searching...', 
+                text: `Looking for barcode: ${barcode}`, 
+                allowOutsideClick: false, 
+                didOpen: () => Swal.showLoading() 
+            });
             
             $.ajax({
                 url: `/pos/find-by-barcode/${encodeURIComponent(barcode)}`,
@@ -2248,71 +2266,53 @@ $('#barcodeSearch').on('keypress', function(e) {
                             $('html, body').animate({ scrollTop: batchRow.offset().top - 100 }, 500);
                             batchRow.css('background', '#fff3cd');
                             setTimeout(() => { batchRow.css('background', ''); }, 3000);
-                            Swal.fire({ icon: 'success', title: 'Product Found!', html: `<strong>${productName}</strong><br>Barcode: ${barcode}`, timer: 2000, showConfirmButton: false });
+                            Swal.fire({ 
+                                icon: 'success', 
+                                title: 'Product Found!', 
+                                html: `<strong>${productName}</strong><br>Barcode: ${barcode}`, 
+                                timer: 2000, 
+                                showConfirmButton: false 
+                            });
                         } else {
-                            Swal.fire({ icon: 'warning', title: 'Product Exists But No Stock', html: `<strong>${productName}</strong><br>found but no active batch in inventory.` });
+                            Swal.fire({ 
+                                icon: 'warning', 
+                                title: 'Product Exists But No Stock', 
+                                html: `<strong>${productName}</strong><br>found but no active batch in inventory.` 
+                            });
                         }
                     } else {
-                        Swal.fire({ icon: 'error', title: 'Barcode Not Found', text: `No product found with barcode: ${barcode}` });
+                        Swal.fire({ 
+                            icon: 'error', 
+                            title: 'Barcode Not Found', 
+                            text: `No product found with barcode: ${barcode}` 
+                        });
                     }
                 },
                 error: function() {
                     Swal.close();
-                    Swal.fire({ icon: 'error', title: 'Search Failed', text: 'Could not connect to server.' });
+                    Swal.fire({ 
+                        icon: 'error', 
+                        title: 'Search Failed', 
+                        text: 'Could not connect to server.' 
+                    });
                 }
             });
             $(this).val('');
         }
     }
 });
+@endif
 
-// ============================================
-// BARCODE GENERATION
-// ============================================
-$('#generateBarcodeBtn').on('click', function() {
-    let btn = $(this);
-    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
-    
-    $.ajax({
-        url: '/barcodes/generate',
-        method: 'POST',
-        headers: { 
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json'
-        },
-        success: function(data) {
-            if (data.barcode) {
-                $('#barcode').val(data.barcode);
-                $('#previewImage').html(`<img src="/barcodes/image/${data.barcode}" style="height: 50px; border: 1px solid #ddd; padding: 5px; border-radius: 4px; background: white;">`);
-                $('#barcodePreview').show();
-                Swal.fire({ icon: 'success', title: 'Barcode Generated!', text: data.barcode, timer: 1500, showConfirmButton: false });
-            }
-        },
-        error: function() {
-            Swal.fire({ icon: 'error', title: 'Generation Failed', text: 'Could not generate barcode.' });
-        },
-        complete: function() {
-            btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Generate');
-        }
-    });
-});
-
-// ============================================
-// INITIALIZE
-// ============================================
 $(document).ready(function() {
-    // Set default arrival date
     let today = new Date().toISOString().split('T')[0];
     $('#arrival_date').val(today);
     
-    // Calculate initial pieces
+    @if(!$isCashier)
     calculatePieces();
-    
-    // Update filter display
     updateFilterDisplay();
+    @endif
     
     console.log('✅ Inventory page loaded successfully!');
-    console.log('✅ Edit button opens modal with product data');
 });
 </script>
 

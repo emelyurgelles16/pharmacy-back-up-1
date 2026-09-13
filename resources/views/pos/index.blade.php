@@ -5,6 +5,10 @@
 @section('content')
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <style>
+    /* ============================================
+       🎯 STANDARDIZED FONT SIZES - POS
+       ============================================ */
+
     /* Full screen POS styles - OPTIMIZED FOR 1366x768 */
     .pos-fullscreen {
         position: fixed;
@@ -34,7 +38,8 @@
         padding: 6px 14px;
         border-radius: 6px;
         cursor: pointer;
-        font-size: 12px;
+        font-size: 13px;
+        font-weight: 500;
         transition: 0.3s;
     }
     
@@ -43,7 +48,7 @@
     }
     
     .pos-title {
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 700;
         color: #1b5e20;
     }
@@ -53,14 +58,34 @@
         grid-template-columns: 2.2fr 0.9fr;
         gap: 14px;
         align-items: start;
+        height: calc(100vh - 100px);
+        min-height: 500px;
     }
     
-    .products-panel,
+    /* ===== PRODUCTS PANEL - SCROLLABLE ===== */
+    .products-panel {
+        background: white;
+        padding: 12px 14px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        max-height: calc(100vh - 130px);
+        min-height: 400px;
+    }
+    
+    /* ===== CART PANEL - EXTENDABLE ===== */
     .cart-panel {
         background: white;
         padding: 12px 14px;
         border-radius: 10px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        max-height: calc(100vh - 130px);
+        min-height: 400px;
     }
     
     .controls {
@@ -69,14 +94,15 @@
         align-items: center;
         margin-bottom: 10px;
         flex-wrap: wrap;
+        flex-shrink: 0;
     }
     
     .search {
         padding: 6px 10px;
         border-radius: 6px;
         border: 1px solid #ddd;
-        width: 180px;
-        font-size: 12px;
+        font-size: 13px;
+        height: 32px;
     }
     
     .category-select {
@@ -84,18 +110,63 @@
         border-radius: 6px;
         border: 1px solid #ddd;
         background: #fff;
-        font-size: 12px;
+        font-size: 13px;
+        height: 32px;
     }
     
+    /* ===== RESET BUTTON ===== */
+    .reset-filter-btn {
+        padding: 6px 14px;
+        border-radius: 6px;
+        border: none;
+        background: #dc3545;
+        color: white;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.3s;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .reset-filter-btn:hover {
+        background: #c82333;
+        transform: scale(1.02);
+    }
+    
+    /* ===== PRODUCTS GRID - SCROLLABLE ===== */
     .products-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
         gap: 10px;
-        max-height: 420px;
         overflow-y: auto;
         padding-right: 4px;
+        flex: 1;
+        min-height: 0;
+        align-content: start;
     }
     
+    .products-grid::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .products-grid::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    .products-grid::-webkit-scrollbar-thumb {
+        background: #1b5e20;
+        border-radius: 4px;
+    }
+    
+    .products-grid::-webkit-scrollbar-thumb:hover {
+        background: #2e7d32;
+    }
+    
+    /* ===== PRODUCT CARD - UNIFORM HEIGHT ===== */
     .product-card {
         border-radius: 10px;
         padding: 8px 10px;
@@ -107,14 +178,45 @@
         flex-direction: column;
         align-items: center;
         cursor: pointer;
-        min-height: 180px;
+        height: 295px;
+        min-height: 295px;
+        max-height: 295px;
         position: relative;
+        border-left-width: 4px;
+        border-left-style: solid;
+        overflow: hidden;
     }
     
     .product-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
     }
+    
+    /* Drug Classification Border Colors */
+    .product-card.drug-otc { border-left-color: #22C55E; }
+    .product-card.drug-prescription { border-left-color: #3B82F6; }
+    .product-card.drug-controlled { border-left-color: #F59E0B; }
+    .product-card.drug-dangerous { border-left-color: #EF4444; }
+    .product-card.drug-none { border-left-color: #94a3b8; }
+    
+    .drug-badge {
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: white;
+        letter-spacing: 0.5px;
+        z-index: 2;
+    }
+    .drug-badge.otc { background: #22C55E; }
+    .drug-badge.prescription { background: #3B82F6; }
+    .drug-badge.controlled { background: #F59E0B; }
+    .drug-badge.dangerous { background: #EF4444; }
+    .drug-badge.none { background: #94a3b8; }
     
     .product-image {
         width: 70px;
@@ -123,22 +225,120 @@
         background: #fafafa;
         border-radius: 6px;
         margin-bottom: 4px;
+        margin-top: 8px;
+        flex-shrink: 0;
     }
     
     .product-name {
         font-weight: 600;
-        font-size: 12px;
+        font-size: 13px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         width: 100%;
         margin-bottom: 2px;
+        flex-shrink: 0;
+        line-height: 1.2;
+        min-height: 18px;
+    }
+    
+    .product-brand {
+        font-size: 11px;
+        color: #666;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+        flex-shrink: 0;
+        line-height: 1.2;
+        min-height: 16px;
+    }
+    
+    .product-brand .brand-label {
+        color: #999;
+        font-size: 9px;
+    }
+    
+    .product-type-badge {
+        display: inline-block;
+        padding: 1px 8px;
+        border-radius: 10px;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    .product-type-badge.generic {
+        background: #e8f5e9;
+        color: #2e7d32;
+        border: 1px solid #a5d6a7;
+    }
+    
+    .product-type-badge.branded {
+        background: #e3f2fd;
+        color: #0d47a1;
+        border: 1px solid #90caf9;
+    }
+    
+    .product-type-badge.unknown {
+        background: #f5f5f5;
+        color: #999;
+        border: 1px solid #ddd;
+    }
+    
+    /* ===== PRICE SECTION - UNIFORM HEIGHT ===== */
+    .product-price-section {
+        width: 100%;
+        min-height: 48px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin: 2px 0;
+        padding: 2px 0;
     }
     
     .product-price {
         color: #1b5e20;
         font-weight: 700;
-        font-size: 13px;
+        font-size: 14px;
+        line-height: 1.2;
+    }
+    
+    .product-price-original {
+        font-size: 10px;
+        color: #999;
+        text-decoration: line-through;
+        line-height: 1.2;
+        min-height: 12px;
+    }
+    
+    .product-price-spacer {
+        font-size: 10px;
+        color: transparent;
+        line-height: 1.2;
+        min-height: 12px;
+        user-select: none;
+    }
+    
+    .product-stock {
+        font-size: 12px;
+        color: #666;
+        margin-top: 2px;
+        flex-shrink: 0;
+        min-height: 16px;
+        line-height: 1.2;
+    }
+    
+    /* ===== BOTTOM CONTROLS - FIXED AT BOTTOM ===== */
+    .product-controls {
+        margin-top: auto;
+        width: 100%;
+        flex-shrink: 0;
+        padding-top: 4px;
     }
     
     .qty-controls {
@@ -157,6 +357,12 @@
         color: #fff;
         cursor: pointer;
         font-size: 12px;
+        transition: all 0.2s;
+    }
+    
+    .qty-btn:hover:not(:disabled) {
+        background: #2e7d32;
+        transform: scale(1.05);
     }
     
     .qty-btn:disabled {
@@ -170,9 +376,61 @@
         padding: 3px 4px;
         border-radius: 4px;
         border: 1px solid #ddd;
-        font-size: 12px;
+        font-size: 13px;
+        height: 28px;
     }
     
+    /* ===== BADGES - ABSOLUTE POSITION ===== */
+    .product-badge {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: white;
+        z-index: 2;
+        letter-spacing: 0.3px;
+    }
+    
+    .badge-promo { background: #9c27b0; }
+    .badge-lowstock { background: #f57c00; }
+    .badge-outofstock { background: #d32f2f; }
+    
+    /* ===== ADD BUTTON - FIXED AT BOTTOM ===== */
+    .add-btn-container {
+        margin-top: 4px;
+        width: 100%;
+    }
+    
+    .add-to-cart {
+        width: 100%;
+        background: #1b5e20;
+        color: #fff;
+        border-radius: 6px;
+        font-size: 11px;
+        padding: 5px 0;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+        height: 28px;
+    }
+    
+    .add-to-cart:hover:not(:disabled) {
+        background: #2e7d32;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(27, 94, 32, 0.3);
+    }
+    
+    .add-to-cart:disabled {
+        background: #ccc !important;
+        cursor: not-allowed;
+    }
+    
+    /* ===== CART PANEL - EXTENDABLE ===== */
     .cart-header {
         font-size: 16px;
         font-weight: 700;
@@ -182,13 +440,33 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-shrink: 0;
     }
     
+    /* ===== CART ITEMS - SCROLLABLE ===== */
     .cart-items {
         flex: 1;
         overflow-y: auto;
-        max-height: 280px;
         padding-right: 4px;
+        min-height: 0;
+    }
+    
+    .cart-items::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .cart-items::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    .cart-items::-webkit-scrollbar-thumb {
+        background: #1b5e20;
+        border-radius: 4px;
+    }
+    
+    .cart-items::-webkit-scrollbar-thumb:hover {
+        background: #2e7d32;
     }
     
     .cart-item {
@@ -207,12 +485,17 @@
     
     .cart-name {
         font-weight: 600;
-        font-size: 12px;
+        font-size: 13px;
+    }
+    
+    .cart-brand {
+        font-size: 11px;
+        color: #888;
     }
     
     .cart-meta {
         color: #666;
-        font-size: 11px;
+        font-size: 12px;
         margin-top: 2px;
     }
     
@@ -228,7 +511,7 @@
         border-radius: 6px;
         border: none;
         cursor: pointer;
-        font-size: 11px;
+        font-size: 12px;
     }
     
     .btn-remove {
@@ -236,6 +519,7 @@
         color: #fff;
     }
     
+    /* ===== SUMMARY - FIXED AT BOTTOM ===== */
     .summary {
         margin-top: 8px;
         border-top: 1px dashed #eee;
@@ -243,6 +527,8 @@
         display: flex;
         flex-direction: column;
         gap: 4px;
+        flex-shrink: 0;
+        background: white;
     }
     
     .summary-row {
@@ -271,6 +557,7 @@
         text-align: right;
         font-weight: bold;
         font-size: 13px;
+        height: 32px;
     }
     
     .checkout-btn {
@@ -282,7 +569,16 @@
         color: #fff;
         font-weight: 700;
         margin-top: 6px;
-        font-size: 14px;
+        font-size: 15px;
+        flex-shrink: 0;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    
+    .checkout-btn:hover:not(:disabled) {
+        background: #2e7d32;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(27, 94, 32, 0.3);
     }
     
     .checkout-btn:disabled {
@@ -290,14 +586,13 @@
         cursor: not-allowed;
     }
     
-    /* Customer Type dropdown */
     #customerTypeSelect {
         width: 150px;
         padding: 4px 28px 4px 10px;
         border-radius: 20px;
         border: 1px solid #cbd5e1;
         background-color: #ffffff;
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 500;
         color: #1e293b;
         appearance: none;
@@ -305,6 +600,7 @@
         background-repeat: no-repeat;
         background-position: right 10px center;
         cursor: pointer;
+        height: 32px;
     }
     
     #customerTypeSelect:hover {
@@ -323,7 +619,8 @@
         border-radius: 20px;
         border: 1px solid #cbd5e1;
         background-color: #ffffff;
-        font-size: 12px;
+        font-size: 13px;
+        height: 32px;
     }
     
     #idNumberInput:focus {
@@ -332,35 +629,22 @@
         box-shadow: 0 0 0 2px rgba(27, 94, 32, 0.1);
     }
     
-    .product-stock {
-        font-size: 11px;
-        color: #666;
-        margin-top: 2px;
-    }
-    
-    .product-badge {
-        position: absolute;
-        top: 4px;
-        right: 4px;
-        padding: 1px 6px;
-        border-radius: 3px;
-        font-size: 8px;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: white;
-    }
-    
-    .badge-promo { background: #9c27b0; }
-    .badge-lowstock { background: #f57c00; }
-    .badge-outofstock { background: #d32f2f; }
-    
     @media (max-width: 1000px) {
         .pos-container {
             grid-template-columns: 1fr;
+            height: auto;
+            min-height: auto;
+        }
+        .products-panel {
+            max-height: 500px;
+            min-height: 300px;
+        }
+        .cart-panel {
+            max-height: 500px;
+            min-height: 300px;
         }
     }
     
-    /* Notification */
     .notification {
         position: fixed;
         top: 20px;
@@ -373,12 +657,12 @@
         font-size: 13px;
     }
     
-    /* Barcode scanner */
     #barcodeScanner {
         border: 2px solid #1b5e20;
         width: 220px;
-        font-size: 12px;
+        font-size: 13px;
         padding: 6px 10px;
+        height: 32px;
     }
     
     #barcodeFeedback {
@@ -443,6 +727,7 @@
         color: #1b5e20;
         font-weight: 700;
         margin-bottom: 20px;
+        font-size: 20px;
     }
     
     .confirmation-content .summary-item {
@@ -464,10 +749,12 @@
     
     .confirmation-content .summary-item .label {
         color: #666;
+        font-size: 13px;
     }
     
     .confirmation-content .summary-item .value {
         font-weight: 600;
+        font-size: 14px;
     }
     
     .confirmation-content .btn-group {
@@ -484,6 +771,7 @@
         font-weight: 600;
         cursor: pointer;
         transition: 0.2s;
+        font-size: 14px;
     }
     
     .btn-cancel-confirm {
@@ -503,7 +791,7 @@
     .btn-confirm-payment:hover {
         background: #0b7a33;
     }
-    
+
     /* ===== RECEIPT PREVIEW ===== */
     .receipt-preview {
         display: none;
@@ -544,10 +832,12 @@
     .receipt-content .receipt-header h4 {
         font-weight: 700;
         color: #1b5e20;
+        font-size: 18px;
     }
     
     .receipt-content .receipt-header small {
         color: #666;
+        font-size: 12px;
     }
     
     .receipt-content .receipt-items {
@@ -611,13 +901,122 @@
         cursor: pointer;
         margin-top: 8px;
         transition: 0.2s;
+        font-size: 14px;
     }
     
     .receipt-content .btn-close-receipt:hover {
         background: #dee2e6;
     }
+
+    /* ===== PRESCRIPTION MODAL ===== */
+    #prescriptionModal {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 16px 20px;
+        border-radius: 10px;
+        width: 450px;
+        z-index: 999999;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    
+    #prescriptionOverlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 999998;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+        .pos-container {
+            grid-template-columns: 1fr;
+            height: auto;
+            min-height: auto;
+        }
+        .products-panel {
+            max-height: 400px;
+            min-height: 250px;
+        }
+        .cart-panel {
+            max-height: 400px;
+            min-height: 250px;
+        }
+        .controls {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .controls .search,
+        .controls .category-select,
+        .controls #barcodeScanner,
+        .controls .reset-filter-btn {
+            width: 100%;
+        }
+        .products-grid {
+            grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+        }
+        .product-card {
+            height: 275px;
+            min-height: 275px;
+            max-height: 275px;
+        }
+        #prescriptionModal {
+            width: 95%;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .pos-title {
+            font-size: 16px;
+        }
+        .back-btn {
+            font-size: 12px;
+            padding: 4px 10px;
+        }
+        .product-card {
+            height: 260px;
+            min-height: 260px;
+            max-height: 260px;
+            padding: 6px 8px;
+        }
+        .product-name {
+            font-size: 12px;
+        }
+        .product-price {
+            font-size: 13px;
+        }
+        .qty-input {
+            width: 32px;
+            font-size: 12px;
+        }
+        .qty-btn {
+            font-size: 11px;
+            padding: 2px 6px;
+        }
+        .cart-name {
+            font-size: 12px;
+        }
+        .summary-row {
+            font-size: 12px;
+        }
+        .pos-container {
+            gap: 10px;
+        }
+        .products-panel,
+        .cart-panel {
+            padding: 8px 10px;
+        }
+    }
 </style>
 
+<!-- ===== POS CONTENT ===== -->
 <div class="pos-fullscreen">
     <div class="pos-header">
         <button class="back-btn" onclick="window.location.href='{{ route('dashboard') }}'">
@@ -630,19 +1029,57 @@
     </div>
     
     <div class="pos-container">
-        <!-- PRODUCTS -->
+        <!-- ===== PRODUCTS PANEL - SCROLLABLE ===== -->
         <div class="products-panel">
             <div class="controls">
-                <input id="search" class="search" placeholder="Search product..." style="width: 160px;">
+                <!-- SEARCH -->
+                <input id="search" class="search" placeholder="Search product..." style="width: 150;">
                 
+                <!-- BARCODE SCANNER -->
                 <input type="text" id="barcodeScanner" class="search" 
                        placeholder="🔍 Scan barcode..." autofocus
                        style="width: 200px; border: 2px solid #1b5e20;">
                 
-                <select id="category" class="category-select" style="width: 140px;">
-                    <option value="all">All categories</option>
+                <!-- CATEGORY FILTER -->
+                <select id="categoryFilter" class="category-select" style="width: 140px;">
+                    <option value="">All Categories</option>
+                    @foreach($categories as $category)
+                        <option value="{{ strtolower($category->name) }}">{{ $category->name }}</option>
+                    @endforeach
+                </select>
+
+                <!-- DRUG CLASSIFICATION FILTER -->
+                <select id="drugClassificationFilter" class="category-select" style="width: 140px; border-color: #1b5e20;">
+                    <option value="">All Classifications</option>
+                    @foreach($drugClassifications as $classification)
+                        @php
+                            $classType = strtolower($classification->type);
+                            $icon = match($classType) {
+                                'otc' => '🟢',
+                                'prescription' => '🔵',
+                                'controlled' => '🟠',
+                                'dangerous' => '🔴',
+                                default => '⚪'
+                            };
+                        @endphp
+                        <option value="{{ $classType }}">{{ $icon }} {{ $classification->name }}</option>
+                    @endforeach
+                    <option value="none">⚪ Unclassified</option>
                 </select>
                 
+                <!-- TYPE FILTER -->
+                <select id="typeFilter" class="category-select" style="width: 120px; border-color: #1b5e20;">
+                    <option value="">All Types</option>
+                    <option value="generic">🟢 Generic</option>
+                    <option value="branded">🔵 Branded</option>
+                </select>
+                
+                <!-- RESET BUTTON -->
+                <button class="reset-filter-btn" id="resetFiltersBtn">
+                    <i class="fas fa-undo"></i> Reset
+                </button>
+                
+                <!-- SOUND TOGGLE -->
                 <button id="toggleScannerSound" class="qty-btn" style="background: #6c757d; padding: 4px 10px; font-size: 12px;">
                     <i class="fas fa-volume-up"></i>
                 </button>
@@ -660,68 +1097,146 @@
                     $hasPromo = $p->has_promo ?? false;
                     $promoDiscount = $p->promo_discount_percent ?? 0;
                     $discountedPrice = $p->discounted_price ?? $p->price;
-                    $borderColor = '#388e3c';
-                    if ($isExpired) $borderColor = '#d32f2f';
-                    elseif ($hasPromo) $borderColor = '#9c27b0';
-                    elseif ($isLowStock) $borderColor = '#f57c00';
+                    
+                    $categoryName = $p->category ?? 'uncategorized';
+                    
+                    $drugClass = $p->drugClassification;
+                    $drugType = $drugClass ? strtolower($drugClass->type) : 'none';
+                    $drugColor = $drugClass ? $drugClass->color : '#94a3b8';
+                    $drugName = $drugClass ? $drugClass->name : 'Unclassified';
+                    $requiresPrescription = $p->requires_prescription ?? false;
+                    
+                    $borderColor = '#94a3b8';
+                    $badgeClass = 'none';
+                    $badgeText = 'N/A';
+                    
+                    if ($drugClass) {
+                        switch ($drugClass->type) {
+                            case 'OTC':
+                                $borderColor = '#22C55E';
+                                $badgeClass = 'otc';
+                                $badgeText = 'OTC';
+                                break;
+                            case 'Prescription':
+                                $borderColor = '#3B82F6';
+                                $badgeClass = 'prescription';
+                                $badgeText = 'Rx';
+                                break;
+                            case 'Controlled':
+                                $borderColor = '#F59E0B';
+                                $badgeClass = 'controlled';
+                                $badgeText = 'Controlled';
+                                break;
+                            case 'Dangerous':
+                                $borderColor = '#EF4444';
+                                $badgeClass = 'dangerous';
+                                $badgeText = 'Dangerous';
+                                break;
+                            default:
+                                $borderColor = '#94a3b8';
+                                $badgeClass = 'none';
+                                $badgeText = 'N/A';
+                        }
+                    }
+                    
+                    $typeClass = 'unknown';
+                    $typeLabel = 'Unknown';
+                    if ($p->type == 'Generic') {
+                        $typeClass = 'generic';
+                        $typeLabel = 'Generic';
+                    } elseif ($p->type == 'Branded') {
+                        $typeClass = 'branded';
+                        $typeLabel = 'Branded';
+                    }
                 @endphp
-                <div class="product-card"
+                <div class="product-card drug-{{ $badgeClass }}"
                     data-id="{{ $p->id }}"
                     data-name="{{ $p->name }}"
+                    data-brand="{{ $p->brand ?? 'No Brand' }}"
+                    data-type="{{ strtolower($p->type ?? 'unknown') }}"
                     data-barcode="{{ $p->barcode }}"
                     data-price="{{ number_format($p->price, 2, '.', '') }}"
                     data-perbox="{{ $p->pieces_per_box ?? 1 }}"
                     data-pieces-left="{{ $totalPiecesLeft }}"
-                    data-category="{{ strtolower($p->category ?? 'uncategorized') }}"
+                    data-category="{{ strtolower($categoryName) }}"
                     data-expired="{{ $isExpired ? 'true' : 'false' }}"
                     data-has-promo="{{ $hasPromo ? 'true' : 'false' }}"
                     data-promo-percent="{{ $promoDiscount }}"
                     data-discounted-price="{{ number_format($discountedPrice, 2, '.', '') }}"
-                    style="border-left: 4px solid {{ $borderColor }}; position: relative;">
+                    data-drug-class="{{ $drugType }}"
+                    data-drug-name="{{ $drugName }}"
+                    data-requires-prescription="{{ $requiresPrescription ? 'true' : 'false' }}"
+                    style="border-left-color: {{ $borderColor }};">
                     
+                    {{-- Drug Classification Badge --}}
+                    <span class="drug-badge {{ $badgeClass }}">{{ $badgeText }}</span>
+                    
+                    {{-- Stock/Promo Badge --}}
                     @if($isExpired)
                         <div class="product-badge badge-outofstock">OUT</div>
                     @elseif($hasPromo)
-                        <div class="product-badge badge-promo">{{ $promoDiscount }}%</div>
+                        <div class="product-badge badge-promo">{{ $promoDiscount }}% OFF</div>
                     @elseif($isLowStock)
                         <div class="product-badge badge-lowstock">LOW</div>
                     @endif
                     
-                    <img class="product-image" src="{{ $p->image ? asset('storage/'.$p->image) : asset('images/no-image.png') }}" alt="{{ $p->name }}">
-                    <div class="product-name">{{ $p->name }}</div>
-                    <div class="product-price">
+                    {{-- Product Image --}}
+                    <img class="product-image" 
+                         src="{{ $p->image ? asset('storage/'.$p->image) : asset('images/no-image.png') }}" 
+                         alt="{{ $p->name }}">
+                    
+                    {{-- Product Name --}}
+                    <div class="product-name" title="{{ $p->name }}">{{ $p->name }}</div>
+                    
+                    {{-- Product Brand --}}
+                    <div class="product-brand" title="{{ $p->brand ?? 'No Brand' }}">
+                        <span class="brand-label">Brand:</span> {{ $p->brand ?? 'No Brand' }}
+                    </div>
+                    
+                    {{-- Product Type Badge --}}
+                    <div style="margin-bottom: 2px; flex-shrink: 0;">
+                        <span class="product-type-badge {{ $typeClass }}">{{ $typeLabel }}</span>
+                    </div>
+                    
+                    {{-- Price Section (Uniform Height) --}}
+                    <div class="product-price-section">
                         @if($hasPromo)
-                            ₱{{ number_format($discountedPrice, 2) }}
-                            <div style="font-size: 10px; color: #999; text-decoration: line-through;">₱{{ number_format($p->price, 2) }}</div>
+                            <div class="product-price">₱{{ number_format($discountedPrice, 2) }}</div>
+                            <div class="product-price-original">₱{{ number_format($p->price, 2) }}</div>
                         @else
-                            ₱{{ number_format($p->price, 2) }}
+                            <div class="product-price">₱{{ number_format($p->price, 2) }}</div>
+                            <div class="product-price-spacer">---</div>
                         @endif
                     </div>
+                    
+                    {{-- Stock Display --}}
                     <div class="product-stock">Stock: <span class="stock-display">{{ $totalPiecesLeft }}</span></div>
-                    <div style="margin-top:auto; width:100%">
+                    
+                    {{-- Bottom Controls --}}
+                    <div class="product-controls">
                         <div class="qty-controls">
                             <button class="qty-btn dec-qty" data-id="{{ $p->id }}" {{ $isExpired ? 'disabled' : '' }}>-</button>
                             <input class="qty-input" id="card-qty-{{ $p->id }}" type="number" value="1" min="1" {{ $isExpired ? 'disabled' : '' }}>
                             <button class="qty-btn inc-qty" data-id="{{ $p->id }}" {{ $isExpired ? 'disabled' : '' }}>+</button>
                         </div>
-                        <div style="margin-top:4px">
-                            <button class="qty-btn add-to-cart" style="width:100%; background:{{ $isExpired ? '#ccc' : '#1b5e20' }}; color:#fff; border-radius:6px; font-size:11px; padding:4px 0;"
+                        <div class="add-btn-container">
+                            <button class="add-to-cart"
                                 data-id="{{ $p->id }}"
                                 {{ $isExpired ? 'disabled' : '' }}>
-                                {{ $isExpired ? 'OUT' : 'Add' }}
+                                {{ $isExpired ? 'OUT OF STOCK' : 'ADD TO CART' }}
                             </button>
                         </div>
                     </div>
                 </div>
-                @endforeach
+                @endforeach   
             </div>
         </div>
 
-        <!-- CART -->
+        <!-- ===== CART PANEL - EXTENDABLE ===== -->
         <div class="cart-panel">
             <div class="cart-header">
                 <span><i class="fas fa-shopping-cart"></i> Cart</span>
-                <button type="button" id="prescriptionBtn" class="qty-btn" style="background: #9c27b0; padding: 4px 10px; font-size: 11px;">
+                <button type="button" id="prescriptionBtn" class="qty-btn" style="background: #9c27b0; padding: 4px 10px; font-size: 12px;">
                     <i class="fas fa-prescription-bottle"></i> RX
                 </button>
             </div>
@@ -833,9 +1348,7 @@
             <hr style="border-top: 2px dashed #ddd;">
         </div>
         
-        <div class="receipt-items" id="receiptItems">
-            <!-- Items will be populated by JS -->
-        </div>
+        <div class="receipt-items" id="receiptItems"></div>
         
         <div class="receipt-total">
             <div class="row">
@@ -868,20 +1381,22 @@
 </div>
 
 <!-- Prescription Modal -->
-<div id="prescriptionModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 16px 20px; border-radius: 10px; width: 450px; z-index: 999999; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+<div id="prescriptionModal">
     <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
         <h4 style="color: #1b5e20; font-size:16px;"><i class="fas fa-prescription-bottle"></i> Search Prescription</h4>
         <button onclick="closePrescriptionModal()" style="background: none; border: none; font-size: 22px; cursor: pointer;">&times;</button>
     </div>
     <div style="display: flex; gap: 8px;">
         <input type="text" id="prescriptionSearch" placeholder="Patient name or RX #" style="flex: 1; padding: 6px 10px; border-radius: 6px; border: 1px solid #ddd; font-size:13px;">
-        <button id="searchPrescriptionBtn" class="qty-btn" style="background: #1b5e20; padding:6px 14px;">Search</button>
+        <button id="searchPrescriptionBtn" class="qty-btn" style="background: #1b5e20; padding:6px 14px; font-size:13px;">Search</button>
     </div>
     <div id="prescriptionResults" style="margin-top: 12px; max-height: 300px; overflow-y: auto; font-size:13px;"></div>
 </div>
 
-<div id="prescriptionOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999998;"></div>
+<div id="prescriptionOverlay"></div>
 
+<!-- ===== JAVASCRIPT ===== -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 const CSRF_TOKEN = '{{ csrf_token() }}';
 let products = {};
@@ -901,6 +1416,8 @@ document.querySelectorAll('.product-card').forEach(card => {
     products[id] = {
         id: id,
         name: card.dataset.name,
+        brand: card.dataset.brand || 'No Brand',
+        type: card.dataset.type || 'unknown',
         barcode: card.dataset.barcode || null,
         price: parseFloat(card.dataset.price),
         perbox: parseInt(card.dataset.perbox) || 1,
@@ -911,19 +1428,11 @@ document.querySelectorAll('.product-card').forEach(card => {
         hasPromo: card.dataset.hasPromo === 'true',
         promoPercent: parseInt(card.dataset.promoPercent) || 0,
         discountedPrice: parseFloat(card.dataset.discountedPrice) || parseFloat(card.dataset.price),
-        originalPrice: parseFloat(card.dataset.price)
+        originalPrice: parseFloat(card.dataset.price),
+        drugClass: card.dataset.drugClass || 'none',
+        drugName: card.dataset.drugName || 'Unclassified',
+        requiresPrescription: card.dataset.requiresPrescription === 'true'
     };
-});
-
-// Build categories
-const categories = new Set();
-Object.values(products).forEach(p => categories.add(p.category));
-const categorySelect = document.getElementById('category');
-categories.forEach(cat => {
-    const opt = document.createElement('option');
-    opt.value = cat;
-    opt.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
-    categorySelect.appendChild(opt);
 });
 
 function formatPeso(n) {
@@ -964,12 +1473,12 @@ function updateStockDisplay(productId, newStock) {
         if (addBtn) {
             if (newStock === 0) {
                 addBtn.disabled = true;
-                addBtn.textContent = 'OUT';
+                addBtn.textContent = 'OUT OF STOCK';
                 addBtn.style.background = '#ccc';
                 card.dataset.expired = 'true';
             } else {
                 addBtn.disabled = false;
-                addBtn.textContent = 'Add';
+                addBtn.textContent = 'ADD TO CART';
                 addBtn.style.background = '#1b5e20';
                 card.dataset.expired = 'false';
             }
@@ -999,7 +1508,9 @@ document.querySelectorAll('.inc-qty').forEach(btn => {
     });
 });
 
-// Add to cart
+// ==========================================
+// ADD TO CART - WITH PRESCRIPTION CHECK
+// ==========================================
 document.querySelectorAll('.add-to-cart').forEach(btn => {
     btn.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -1012,6 +1523,64 @@ document.querySelectorAll('.add-to-cart').forEach(btn => {
             return;
         }
         
+        // ✅ CHECK 1: Kung prescription required at walang active prescription
+        if (p.requiresPrescription && !activePrescription) {
+            Swal.fire({
+                icon: 'warning',
+                title: '💊 Prescription Required',
+                html: `
+                    <div style="text-align: left; padding: 10px;">
+                        <p style="font-size: 15px; margin-bottom: 10px;">
+                            <strong style="color: #3B82F6;">${p.name}</strong> requires a prescription.
+                        </p>
+                        <p style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                            Classification: <strong>${p.drugName}</strong>
+                        </p>
+                        <hr style="margin: 10px 0;">
+                        <p style="font-size: 14px; color: #666;">
+                            Please add a prescription first by clicking the 
+                            <strong style="color: #9c27b0;">RX</strong> button in the cart panel.
+                        </p>
+                    </div>
+                `,
+                confirmButtonColor: '#9c27b0',
+                confirmButtonText: 'Open Prescription',
+                showCancelButton: true,
+                cancelButtonText: 'Cancel',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('prescriptionBtn').click();
+                }
+            });
+            return;
+        }
+        
+        // ✅ CHECK 2: Kung may active prescription, check kung nasa prescription ang product
+        if (activePrescription && p.requiresPrescription) {
+            let prescriptionItem = activePrescription.items.find(item => item.product_id == productId);
+            if (!prescriptionItem) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '❌ Not in Prescription',
+                    html: `
+                        <div style="text-align: left; padding: 10px;">
+                            <p style="font-size: 15px;">
+                                <strong>${p.name}</strong> is not included in the active prescription.
+                            </p>
+                            <p style="font-size: 14px; color: #666;">
+                                Patient: <strong>${activePrescription.patient_name}</strong><br>
+                                RX #: <strong>${activePrescription.prescription_number}</strong>
+                            </p>
+                        </div>
+                    `,
+                    confirmButtonColor: '#d32f2f',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+        }
+        
         const qtyInput = document.getElementById(`card-qty-${productId}`);
         const qty = parseInt(qtyInput.value) || 1;
         
@@ -1020,11 +1589,31 @@ document.querySelectorAll('.add-to-cart').forEach(btn => {
             return;
         }
         
-        if (activePrescription) {
+        // ✅ CHECK 3: Prescription quantity limit
+        if (activePrescription && p.requiresPrescription) {
             let prescriptionItem = activePrescription.items.find(item => item.product_id == productId);
             if (prescriptionItem) {
-                if (qty > prescriptionItem.quantity_remaining) {
-                    showNotification(`Only ${prescriptionItem.quantity_remaining} left in RX`, 'error');
+                let existingQty = 0;
+                if (cart[productId]) {
+                    existingQty = cart[productId].qty;
+                }
+                let totalQty = existingQty + qty;
+                
+                if (totalQty > prescriptionItem.quantity_remaining) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '⚠️ Prescription Limit',
+                        html: `
+                            <p><strong>${p.name}</strong></p>
+                            <p>Prescribed: <strong>${prescriptionItem.quantity_prescribed}</strong></p>
+                            <p>Remaining: <strong>${prescriptionItem.quantity_remaining}</strong></p>
+                            <p>In cart: <strong>${existingQty}</strong></p>
+                            <hr>
+                            <p style="color: #d32f2f;">Cannot add <strong>${qty}</strong> more. Only <strong>${prescriptionItem.quantity_remaining - existingQty}</strong> remaining.</p>
+                        `,
+                        confirmButtonColor: '#e65100',
+                        confirmButtonText: 'OK'
+                    });
                     return;
                 }
             }
@@ -1049,13 +1638,18 @@ document.querySelectorAll('.add-to-cart').forEach(btn => {
             cart[key] = {
                 id: productId,
                 name: p.name,
+                brand: p.brand || 'No Brand',
+                type: p.type || 'unknown',
                 qty: qty,
                 unitPrice: unitPrice,
                 originalPrice: originalPrice,
                 discountPercent: p.promoPercent,
                 discountAmount: discountAmount,
                 subtotal: subtotal,
-                hasPromo: p.hasPromo
+                hasPromo: p.hasPromo,
+                drugClass: p.drugClass,
+                drugName: p.drugName,
+                requiresPrescription: p.requiresPrescription
             };
         }
         
@@ -1080,9 +1674,23 @@ function updateCartDisplay() {
         const item = cart[k];
         const row = document.createElement('div');
         row.className = 'cart-item';
+        
+        let badgeHtml = '';
+        if (item.drugClass && item.drugClass !== 'none') {
+            const drugColors = {
+                'otc': '#22C55E',
+                'prescription': '#3B82F6',
+                'controlled': '#F59E0B',
+                'dangerous': '#EF4444'
+            };
+            const color = drugColors[item.drugClass] || '#94a3b8';
+            badgeHtml = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:4px;"></span>`;
+        }
+        
         row.innerHTML = `
             <div class="cart-left">
-                <div class="cart-name">${item.name}</div>
+                <div class="cart-name">${badgeHtml} ${item.name}</div>
+                <div class="cart-brand">${item.brand} (${item.type})</div>
                 <div class="cart-meta">
                     ${item.qty} × ₱${formatPeso(item.unitPrice)}
                     ${item.hasPromo ? `<span style="color:#9c27b0;font-size:10px;"> 🔥${item.discountPercent}%</span>` : ''}
@@ -1134,7 +1742,84 @@ function calculatePayment() {
     document.getElementById('changeDisplay').innerHTML = `₱${formatPeso(change)}`;
 }
 
-// Barcode Scanner
+// ==========================================
+// FILTERS
+// ==========================================
+function applyFilters() {
+    const searchTerm = document.getElementById('search').value.trim().toLowerCase();
+    const categoryVal = document.getElementById('categoryFilter').value;
+    const drugVal = document.getElementById('drugClassificationFilter').value;
+    const typeVal = document.getElementById('typeFilter').value;
+    
+    let visibleCount = 0;
+    
+    document.querySelectorAll('.product-card').forEach(card => {
+        const name = (card.dataset.name || '').toLowerCase();
+        const brand = (card.dataset.brand || '').toLowerCase();
+        const category = card.dataset.category || '';
+        const drugClass = card.dataset.drugClass || '';
+        const type = card.dataset.type || '';
+        
+        let show = true;
+        
+        if (searchTerm && !name.includes(searchTerm) && !brand.includes(searchTerm)) {
+            show = false;
+        }
+        
+        if (categoryVal && category !== categoryVal) {
+            show = false;
+        }
+        
+        if (drugVal && drugClass !== drugVal) {
+            show = false;
+        }
+        
+        if (typeVal && type !== typeVal) {
+            show = false;
+        }
+        
+        card.style.display = show ? 'flex' : 'none';
+        if (show) visibleCount++;
+    });
+    
+    let noResults = document.getElementById('noResultsMessage');
+    if (visibleCount === 0) {
+        if (!noResults) {
+            noResults = document.createElement('div');
+            noResults.id = 'noResultsMessage';
+            noResults.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 40px; color: #999; font-size: 14px;';
+            noResults.innerHTML = '<i class="fas fa-search" style="font-size: 24px; display: block; margin-bottom: 10px;"></i> No products match your filters';
+            document.getElementById('productsGrid').appendChild(noResults);
+        }
+        noResults.style.display = 'block';
+    } else {
+        if (noResults) {
+            noResults.style.display = 'none';
+        }
+    }
+}
+
+function resetFilters() {
+    document.getElementById('search').value = '';
+    document.getElementById('categoryFilter').value = '';
+    document.getElementById('drugClassificationFilter').value = '';
+    document.getElementById('typeFilter').value = '';
+    
+    const noResults = document.getElementById('noResultsMessage');
+    if (noResults) noResults.remove();
+    
+    applyFilters();
+}
+
+document.getElementById('search').addEventListener('input', applyFilters);
+document.getElementById('categoryFilter').addEventListener('change', applyFilters);
+document.getElementById('drugClassificationFilter').addEventListener('change', applyFilters);
+document.getElementById('typeFilter').addEventListener('change', applyFilters);
+document.getElementById('resetFiltersBtn').addEventListener('click', resetFilters);
+
+// ==========================================
+// BARCODE SCANNER
+// ==========================================
 const barcodeInput = document.getElementById('barcodeScanner');
 const toggleSoundBtn = document.getElementById('toggleScannerSound');
 const barcodeFeedback = document.getElementById('barcodeFeedback');
@@ -1186,7 +1871,27 @@ if (barcodeInput) {
                         break;
                     }
                 }
+                
                 if (foundProduct && foundProduct.pieces_left > 0) {
+                    if (foundProduct.requiresPrescription && !activePrescription) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: '💊 Prescription Required',
+                            html: `<strong>${foundProduct.name}</strong> requires a prescription. Please add a prescription first.`,
+                            confirmButtonColor: '#9c27b0',
+                            confirmButtonText: 'Open Prescription',
+                            showCancelButton: true,
+                            cancelButtonText: 'Cancel'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                document.getElementById('prescriptionBtn').click();
+                            }
+                        });
+                        playBeep('error');
+                        barcodeInput.value = '';
+                        return;
+                    }
+                    
                     const qtyInput = document.getElementById(`card-qty-${foundProductId}`);
                     if (qtyInput) qtyInput.value = 1;
                     const addBtn = document.querySelector(`.add-to-cart[data-id="${foundProductId}"]`);
@@ -1207,24 +1912,9 @@ if (barcodeInput) {
     });
 }
 
-// Search and filter
-document.getElementById('search').addEventListener('input', function() {
-    const q = this.value.trim().toLowerCase();
-    document.querySelectorAll('.product-card').forEach(card => {
-        const name = card.dataset.name || '';
-        card.style.display = (!q || name.toLowerCase().includes(q)) ? 'flex' : 'none';
-    });
-});
-
-document.getElementById('category').addEventListener('change', function() {
-    const val = this.value;
-    document.querySelectorAll('.product-card').forEach(card => {
-        if (val === 'all') { card.style.display = 'flex'; }
-        else { card.style.display = (card.dataset.category === val) ? 'flex' : 'none'; }
-    });
-});
-
-// Customer type discount
+// ==========================================
+// CUSTOMER DISCOUNT
+// ==========================================
 const customerTypeSelect = document.getElementById('customerTypeSelect');
 const idNumberRow = document.getElementById('idNumberRow');
 const idNumberInput = document.getElementById('idNumberInput');
@@ -1251,7 +1941,7 @@ customerTypeSelect.addEventListener('change', function() {
 document.getElementById('cashInput').addEventListener('input', calculatePayment);
 
 // ==========================================
-// ✅ CHECKOUT - WITH CONFIRMATION MODAL
+// CHECKOUT
 // ==========================================
 document.getElementById('checkoutBtn').addEventListener('click', function() {
     const subtotal = Object.values(cart).reduce((sum, item) => sum + item.subtotal, 0);
@@ -1267,12 +1957,35 @@ document.getElementById('checkoutBtn').addEventListener('click', function() {
         }
     }
     
+    const prescriptionItems = Object.values(cart).filter(item => item.requiresPrescription);
+    if (prescriptionItems.length > 0 && !activePrescription) {
+        Swal.fire({
+            icon: 'error',
+            title: '❌ Prescription Required',
+            html: `
+                <p>The following items require a prescription:</p>
+                <ul style="text-align: left; margin: 10px 0;">
+                    ${prescriptionItems.map(item => `<li><strong>${item.name}</strong></li>`).join('')}
+                </ul>
+                <p>Please add a prescription first.</p>
+            `,
+            confirmButtonColor: '#9c27b0',
+            confirmButtonText: 'Open Prescription',
+            showCancelButton: true,
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('prescriptionBtn').click();
+            }
+        });
+        return;
+    }
+    
     if (cashTendered < finalTotal) {
         showNotification('Need ₱' + formatPeso(finalTotal - cashTendered) + ' more', 'error');
         return;
     }
     
-    // Show confirmation modal
     document.getElementById('confirmTotal').textContent = '₱' + formatPeso(finalTotal);
     document.getElementById('confirmPaid').textContent = '₱' + formatPeso(cashTendered);
     document.getElementById('confirmChange').textContent = '₱' + formatPeso(cashTendered - finalTotal);
@@ -1281,12 +1994,10 @@ document.getElementById('checkoutBtn').addEventListener('click', function() {
     document.getElementById('confirmationModal').classList.add('active');
 });
 
-// Cancel confirmation
 document.getElementById('cancelConfirmBtn').addEventListener('click', function() {
     document.getElementById('confirmationModal').classList.remove('active');
 });
 
-// Confirm Payment
 document.getElementById('confirmPaymentBtn').addEventListener('click', function() {
     processPayment();
 });
@@ -1307,7 +2018,9 @@ function processPayment() {
         discountAmount: item.discountAmount,
         subtotal: item.subtotal,
         piecesPerBox: 1,
-        hasPromo: item.hasPromo
+        hasPromo: item.hasPromo,
+        brand: item.brand,
+        typeLabel: item.type
     }));
     
     const requestData = {
@@ -1324,10 +2037,8 @@ function processPayment() {
         requestData.customer_type_name = currentDiscountTypeName;
     }
     
-    // Close confirmation modal
     document.getElementById('confirmationModal').classList.remove('active');
     
-    // Show loading
     Swal.fire({
         title: 'Processing...',
         text: 'Please wait while we process your payment.',
@@ -1373,7 +2084,7 @@ function processPayment() {
 }
 
 // ==========================================
-// ✅ RECEIPT PREVIEW
+// RECEIPT PREVIEW
 // ==========================================
 function showReceiptPreview(data) {
     const now = new Date();
@@ -1381,12 +2092,22 @@ function showReceiptPreview(data) {
     document.getElementById('receiptInvoice').textContent = data.invoice_no;
     document.getElementById('receiptDate').textContent = now.toLocaleString();
     
-    // Items
     let itemsHtml = '';
     Object.values(cart).forEach(item => {
+        let badgeHtml = '';
+        if (item.drugClass && item.drugClass !== 'none') {
+            const drugColors = {
+                'otc': '#22C55E',
+                'prescription': '#3B82F6',
+                'controlled': '#F59E0B',
+                'dangerous': '#EF4444'
+            };
+            const color = drugColors[item.drugClass] || '#94a3b8';
+            badgeHtml = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px;"></span>`;
+        }
         itemsHtml += `
             <div class="receipt-item">
-                <span>${item.qty}x ${item.name}</span>
+                <span>${badgeHtml} ${item.qty}x ${item.name}</span>
                 <span>₱${formatPeso(item.subtotal)}</span>
             </div>
         `;
@@ -1407,7 +2128,6 @@ function showReceiptPreview(data) {
     document.getElementById('receiptPreview').classList.add('active');
 }
 
-// Print Receipt
 document.getElementById('printReceiptBtn').addEventListener('click', function() {
     const printWindow = window.open('{{ url("/") }}/receipts/' + lastSaleData.sale_id + '/print', '_blank', 'width=400,height=600');
     
@@ -1423,7 +2143,6 @@ document.getElementById('printReceiptBtn').addEventListener('click', function() 
     }
 });
 
-// Close Receipt
 document.getElementById('closeReceiptBtn').addEventListener('click', function() {
     document.getElementById('receiptPreview').classList.remove('active');
     cart = {};
@@ -1493,12 +2212,25 @@ function loadPrescription(id, number) {
         if (data.success) {
             activePrescription = data.data;
             closePrescriptionModal();
-            Swal.fire({ icon: 'success', title: 'RX Loaded', text: `Patient: ${data.data.patient_name}`, timer: 1500, showConfirmButton: false });
+            Swal.fire({ 
+                icon: 'success', 
+                title: 'RX Loaded', 
+                html: `
+                    <p><strong>Patient:</strong> ${data.data.patient_name}</p>
+                    <p><strong>RX #:</strong> ${data.data.prescription_number}</p>
+                    <p><strong>Items:</strong> ${data.data.items.length}</p>
+                `,
+                timer: 2500, 
+                showConfirmButton: false 
+            });
         }
     })
     .catch(() => {
         Swal.fire('Error', 'Failed to load prescription', 'error');
     });
 }
+
+// Close prescription modal on overlay click
+document.getElementById('prescriptionOverlay').addEventListener('click', closePrescriptionModal);
 </script>
 @endsection
