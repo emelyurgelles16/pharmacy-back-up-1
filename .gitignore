@@ -22,3 +22,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Database backups (not needed - use migrations)
+/storage/app/backups/
+*.sql
+!/vendor/**/*.sql
